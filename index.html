@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Kinetic Sculptor</title>
+		<meta charset="utf-8">
+		<!-- <link href="css/main.css" rel="stylesheet" /> -->
+		<link href="css/light.css" rel="stylesheet" />
+		<script src="build/three.js"></script>
+		<script src="build/OutlineEffect.js"></script>
+		<script src="build/TrackballControls.js"></script>
+		<script src="build/TransformControls.js"></script>
+		<script src="build/signals.min.js"></script>
+		<script src="build/OBJLoader.js"></script>
+		<script src="build/RaytracingRenderer.js"></script>
+		<script src="build/QuickHull.js"></script>
+		<script src="build/ConvexGeometry.js"></script>
+		<script src="build/SweepBufferGeometry.js"></script>
+		<!--ui libs-->
+		<script src="build/ui.js"></script>
+		<script src="build/ui.three.js"></script>
+		<script src="build/Fatline.js"></script>
+		<script src="CurveLib.js"></script>
+		<script src="calculatingGeometry.js"></script>
+		<script src="Sketch.js"></script>
+		<script src="Rib.js"></script>
+		<script src="Unit.js"></script>
+		<script src="KSBone.js"></script>
+		<script src="KineticSculpture.js"></script>
+		<script src="Sculptor.js"></script>
+		<script src="Topbar.js"></script>
+		<script src="Viewport.js"></script>
+		<script src="Leftbar.js"></script>
+		<script src="Leftbar.Unit.js"></script>
+		<script src="Leftbar.Unit.Semantic.js"></script>
+		<script src="Leftbar.Unit.Blade.js"></script>
+		<script src="Leftbar.Unit.Accessory.js"></script>
+		<!-- <script src="Leftbar.Unit.Geometry.js"></script>
+		<script src="Leftbar.Unit.Geometry.separated.js"></script>
+		<script src="Leftbar.Unit.Geometry.radical.js"></script>
+		<script src="Leftbar.Unit.Geometry.connected.js"></script> -->
+		<script src="Leftbar.Sketch.js"></script>
+		<script src="Leftbar.Layout.js"></script>
+		<script src="Rightbar.js"></script>
+		<script src="Rightbar.Scene.js"></script>
+		<script src="Rightbar.Mechanism.js"></script>
+		<script src="Rightbar.Geometry.js"></script>
+		<script src="Rightbar.Geometry.Ellipse.js"></script>
+		<script src="Rightbar.Geometry.Sin.js"></script>
+		<script src="Rightbar.Geometry.Spiral.js"></script>
+		<script src="Rightbar.Geometry.TorusKnot.js"></script>
+		<script src="Rightbar.Geometry.DecoratedTorusKnot.js"></script>
+		<script src="Rightbar.Transforms.js"></script>
+		<script src="Rightbar.Transforms.Inner.js"></script>
+		<script src="Bottombar.js"></script>
+		<!--core LTD components-->
+		<!-- <script src="calculatingGeometry.js"></script>
+		<script src="CurveLib.js"></script>
+		<script src="FatLine.js"></script>
+		<script src="SketchLines.js"></script>
+		<script src="KSBone.js"></script>
+		<script src="Synthesizer.js"></script>
+		<script src="Menubar.js"></script>
+		<script src="Toolbar.js"></script>
+		<script src="Sidebar.js"></script>
+		<script src="Sidebar.Sculpture.js"></script>
+		<script src="Sidebar.Object.js"></script>
+		<script src="Sidebar.Geometry.js"></script>
+		<script src="Sidebar.Geometry.Ellipse.js"></script>
+		<script src="Sidebar.Geometry.Sin.js"></script>
+		<script src="Sidebar.Geometry.Spiral.js"></script>
+		<script src="Sidebar.Geometry.TorusKnot.js"></script>
+		<script src="Sidebar.Geometry.DecoratedTorusKnot.js"></script>
+		<script src="KineticSculpture.js"></script>
+		<script src="loadingBar.js"></script> -->
+	</head>
+	<body>
+		<script>
+			// loading manager
+			// var manager = new THREE.LoadingManager();
+			// var objLoader = new THREE.OBJLoader();
+			// // texture loader to initialize elements
+			// var elementLoader = new THREE.TextureLoader(manager);
+			
+			// Core components
+			// var synthesizer = new Synthesizer();
+			var sculptor = new Sculptor();
+
+			var topbar = new Topbar(sculptor);
+			document.body.appendChild( topbar.dom );
+
+			// viewport
+			var viewport = new Viewport(sculptor);
+			document.body.appendChild( viewport.dom );
+
+			var leftbar = new Leftbar(sculptor);
+			document.body.appendChild( leftbar.dom );
+
+			var rightbar = new Rightbar(sculptor);
+			document.body.appendChild( rightbar.dom );
+
+			var bottombar = new Bottombar(sculptor);
+			document.body.appendChild( bottombar.dom );
+
+
+
+			// event
+			window.addEventListener( 'resize', onWindowResize, false );
+			function onWindowResize() {
+
+				sculptor.signals.windowResize.dispatch();
+
+			}
+
+			onWindowResize();
+
+		</script>
+	</body>
+</html>

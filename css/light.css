@@ -1,0 +1,665 @@
+/*
+ * basic ui components
+ */
+body {
+	font-family: Helvetica, Arial, sans-serif;
+}
+button {
+	color: #555;
+	background-position: center;
+	background-color: #eee;
+	background-repeat: no-repeat;
+	background-size:80% 80%;
+	border: 0px;
+	padding: 5px 8px;
+	cursor: pointer;
+	outline: none;
+}
+
+	button:hover {
+		background-color: #fff;
+	}
+
+	button.selected {
+		background-color: #fff;
+	}
+
+input, textarea {
+	border: 1px solid transparent;
+	color: #444;
+}
+
+input.Number {
+	color: #08f!important;
+	font-size: 12px;
+	border: 0px;
+	padding: 2px;
+	cursor: col-resize;
+}
+
+select {
+	color: #666;
+	background-color: #ddd;
+	border: 0px;
+	/* text-transform: uppercase; */
+	cursor: pointer;
+	outline: none;
+}
+
+	select:hover {
+		background-color: #fff;
+	}
+
+#topbar {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: calc(100% - 4px);
+	height: 50px;
+	border: solid 2px #333;
+	background-color: #fff;
+}
+#topbar .Row {
+	margin-left: 20px !important;
+	margin-right: 20px !important;
+	display: inline;
+}
+#topbar .Button {
+	background-color:#fff !important;
+	height:50px;
+	width:70px;
+}
+#topbar button:hover {
+	filter:invert(100%);
+}
+#topbar button.selected {
+	filter:invert(100%);
+}
+	#new {
+		background-image:url(icons/topbar/new.svg);
+		background-size:70% 70% !important;
+	}
+	#open {
+		background-image:url(icons/topbar/open.svg);
+	}
+	#save {
+		background-image:url(icons/topbar/save.svg);
+		background-size:70% 70% !important;
+	}
+	#print{
+		background-image:url(icons/topbar/print.svg);
+	}
+
+	#unitScene {
+		background-image:url(icons/leftbar/separated.svg);
+	}
+	#sketchScene {
+		background-image:url(icons/leftbar/brush2d.svg);
+	}
+	#Effect {
+		background-image:url(icons/topbar/effect.svg);
+	}
+	#layoutScene {
+		background-image:url(icons/topbar/mechanism.svg);
+	}
+
+	#play {
+		background-image:url(icons/topbar/play.svg);
+		background-size:70% 70% !important;
+	}
+	#pause {
+		background-image:url(icons/topbar/pause.svg);
+		background-size:70% 70% !important;
+		filter:invert(100%);
+	}
+	#reset {
+		background-image:url(icons/topbar/reset.svg);
+		background-size:70% 70% !important;
+	}
+
+	#translate {
+		background-image:url(icons/topbar/translate.svg);
+	}
+	#rotate {
+		background-image:url(icons/topbar/rotate.svg);
+	}
+	#scale {
+		background-image:url(icons/topbar/scale.svg);
+	}
+	#duplicate {
+		background-image:url(icons/topbar/duplicate.svg);
+	}
+	#remove {
+		background-image:url(icons/topbar/remove.svg);
+	}
+
+	#github {
+		background-image:url(icons/topbar/github.svg);
+	}
+
+#leftbar {
+	position: absolute;
+	bottom: 27px;
+	left: 0;
+	width: 180px;
+	height: calc(100% - 81px);
+	background-color: #fff;
+	border-left: solid 2px #333;
+	border-right: solid 2px #333;
+}
+#leftbar .Text{
+	margin: 10px;
+	font-size: 20px;
+}
+#leftbar .Button {
+	margin:10px;
+	border: solid 2px #333;
+	border-radius: 5px;
+	background-size: 80% 80%;
+	background-position: center;
+	background-color: #ccc;
+}
+#leftbar-unit .Button {
+	margin:10px;
+	height:40px;
+	width:40px;
+}
+#leftbar-unit .Integer {
+	width:40px;
+}
+#leftbar-unit .Number {
+	width:40px;
+}
+#leftbar button:hover {
+	background-color: #fff;
+}
+#leftbar button.selected {
+	background-color: #fff;
+}
+	/*unit*/
+	#ca {
+		background-image: url(icons/leftbar/ca.svg);
+	}
+	#gen-vg {
+		background-image: url(icons/leftbar/separated.svg);
+	}
+	#select-all {
+		background-image: url(icons/leftbar/select-all.svg);
+	}
+	#gca {
+		height:30px !important;
+		width:30px !important;
+		background-image: url(icons/leftbar/checked.svg);
+	}
+	#cca {
+		height:30px !important;
+		width:30px !important;
+		background-image: url(icons/leftbar/forbidden.svg);
+	}
+	#gla {
+		height:30px !important;
+		width:30px !important;
+		background-image: url(icons/leftbar/checked.svg);
+	}
+	#cla {
+		height:30px !important;
+		width:30px !important;
+		background-image: url(icons/leftbar/forbidden.svg);
+	}
+	#delete {
+		background-image: url(icons/leftbar/delete.svg);
+	}
+	#separated {
+		background-image: url(icons/leftbar/separated.svg);
+	}
+	#radical {
+		background-image: url(icons/leftbar/radical.svg);
+	}
+	#connected {
+		background-image: url(icons/leftbar/connected.svg);
+	}
+	#gen {
+		background-image: url(icons/leftbar/automation.svg);
+	}
+	#import-unit {
+		background-image: url(icons/topbar/open.svg);
+	}
+	#clear {
+		background-image: url(icons/leftbar/clear.svg);
+	}
+	#go-layout {
+		background-image: url(icons/leftbar/export.svg);
+	}
+	#leftbar .Input {
+		margin-left: 20px;
+		border: solid 1px #000 !important;
+	}
+
+	/* sketch */
+	#straight {
+		background-size: 60% 60% !important;
+		background-image: url(icons/leftbar/straight.svg);
+	}
+	#convex {
+		background-size: 60% 60% !important;
+		background-image: url(icons/leftbar/convex.svg);
+	}
+	#concave {
+		background-size: 60% 60% !important;
+		background-image: url(icons/leftbar/concave.svg);
+	}
+
+	/*sketches*/
+	#line {
+		background-image:url(icons/leftbar/line.svg);
+	}
+	#spline {
+		background-image:url(icons/leftbar/spline.svg);
+	}
+	#brush2d {
+		background-image:url(icons/leftbar/brush2d.svg);
+	}
+	#brush3d {
+		background-image:url(icons/leftbar/brush3d.svg);
+	}
+	#ellipse {
+		background-image:url(icons/leftbar/ellipse.svg);
+	}
+	#sin {
+		background-image:url(icons/leftbar/sin.svg);
+	}
+	#spiral {
+		background-image:url(icons/leftbar/spiral.svg);
+	}
+	#torusKnot {
+		background-image:url(icons/leftbar/torusknot.svg);
+	}
+	#decorativeKnot {
+		background-image:url(icons/leftbar/decorativeknot.svg);
+	}
+	#importCurve {
+		background-image:url(icons/leftbar/dots.svg);
+	}
+	#bias {
+		background-image:url(icons/leftbar/bias.svg);
+	}
+	#sample {
+		background-image:url(icons/leftbar/sample.svg);
+	}
+	#cut {
+		background-image:url(icons/leftbar/cut.svg);
+	}
+	#projection {
+		background-image:url(icons/leftbar/projection.svg);
+	}
+	#auto {
+		background-image:url(icons/leftbar/auto.svg);
+	}
+	#extrude {
+		background-image:url(icons/leftbar/extrude.svg);
+	}
+	#revolve {
+		background-image:url(icons/leftbar/revolve.svg);
+	}
+	#expand {
+		background-image:url(icons/leftbar/expand.svg);
+	}
+#leftbar-sketch {
+	margin: 15px;
+	/* border: solid 2px #333; */
+}
+#leftbar-sketch .Button {
+	margin:10px;
+	height:50px;
+	width:50px;
+}
+
+#leftbar-layout .Text{
+	font-size:15px;
+	width:80px;
+}
+#leftbar-layout .Integer {
+	width:40px;
+}
+#leftbar-layout .Number {
+	width:40px;
+}
+
+#leftbar-unit-tabs .Button{
+	background-position: center;
+	background-color: #ddd;
+	background-repeat: no-repeat;
+	background-size:80% 80%;
+	width:33%;
+	height:40px;
+	border-bottom:none;
+	border-top: solid 1px #888;
+	border-left: solid 1px #888;
+	border-right: solid 1px #888;
+	border-radius: 10px 10px 0 0;
+	margin:0;
+}
+	#semantic-tab {
+		background:url(icons/leftbar/spline.svg);
+	}
+	#blade-tab {
+		background:url(icons/leftbar/blade.svg);
+	}
+	#accessory-tab {
+		background:url(icons/leftbar/accessory.svg);
+	}
+/* rightbar */
+#rightbar {
+	position: absolute;
+	bottom: 27px;
+	right: 0;
+	width: 200px;
+	height: calc(100% - 81px);
+	background-color: #fff;
+	border-left: solid 2px #333;
+	border-right: solid 2px #333;
+}
+#rightbar .Number{
+	width: 50px;
+}
+#rightbar .Integer{
+	width: 50px;
+}
+
+/* rightbar tabs*/
+#rightbar #rightbar-tabs {
+	width:100%;
+	height:50px;
+	margin-bottom:0 !important;
+}
+#rightbar #rightbar-tabs .Button{
+	background-position: center;
+	background-color: #ddd;
+	background-repeat: no-repeat;
+	background-size:80% 80%;
+	width:30%;
+	height:40px;
+	border-bottom:none;
+	border-top: solid 1px #888;
+	border-left: solid 1px #888;
+	border-right: solid 1px #888;
+	border-radius: 10px 10px 0 0;
+	margin:0;
+}
+#rightbar #rightbar-tabs button:hover {
+	background-color: #fff;
+}
+#rightbar #rightbar-tabs button.selected {
+	background-color: #fff;
+}
+	#scene-tab{
+		background:url(icons/rightbar/scene-tab.svg);
+	}
+	#geometry-tab{
+		background:url(icons/rightbar/geometry-tab.svg);
+	}
+	#mechanism-tab{
+		background:url(icons/rightbar/mechanism-tab.svg);
+	}
+
+/* rightbar scene tab*/
+#rightbar-scene {
+	margin:10px;
+	margin-top:0;
+}
+#rightbar-scene .Row{
+	margin:0 !important;
+}
+#rightbar-scene .Button{
+	border: none;
+	border-radius: 0;
+}
+#rightbar-scene button:hover {
+	background-color: #bbb;
+}
+#rightbar-scene button.selected {
+	background-color: #bbb;
+}
+
+/* camera row */
+#camera-row .Button {
+	height:50px;
+	width:50px;
+	margin:5px;
+	background-size: 80% 80%;
+}
+	#point-layer {
+		background-size: 20% 20% !important;
+		background-image:url(icons/leftbar/dot.svg);
+	}
+	#line-layer {
+		background-image:url(icons/leftbar/line.svg);
+	}
+	#bone-layer {
+		background-image:url(icons/rightbar/skeleton.svg);
+	}
+	#mesh-layer {
+		background-image:url(icons/rightbar/object.svg);
+	}
+	#env-layer {
+		background-image:url(icons/rightbar/envelope.svg);
+	}
+	#helper-layer {
+		background-image:url(icons/rightbar/helper.svg);
+	}
+	#front-view {
+		background-image:url(icons/rightbar/front-view.svg);
+	}
+	#left-view {
+		background-image:url(icons/rightbar/left-view.svg);
+	}
+	#top-view {
+		background-image:url(icons/rightbar/top-view.svg);
+	}
+	#axonometric-view {
+		background-image:url(icons/rightbar/a-view.svg);
+	}
+	#focus-view {
+		background-image:url(icons/rightbar/focus-view.svg);
+	}
+	#orbit-view {
+		background-image:url(icons/rightbar/orbit-view.svg);
+	}
+
+/* scene row */
+#scene-row .Button{
+	height:50px;
+	width:50px;
+	margin:5px;
+	/* border: none; */
+	/* border-radius: 0; */
+}
+	#scene1{
+		background-image: url(../cubemaps/scene1/nz.png);
+	}
+	#scene2{
+		background-image: url(../cubemaps/scene2/nz.png);
+	}
+
+/* unit row */
+#unit-row .Button {
+	border-radius:25px;
+	height:50px;
+	width:50px;
+	margin:5px;
+	background-size: 60% 60%;
+}
+	#toon {
+		background-image: url(icons/rightbar/toon.svg);
+	}
+	#reflective {
+		background-image: url(icons/rightbar/reflective.svg);
+	}
+	#glass {
+		background-image: url(icons/rightbar/glass.svg);
+	}
+	#custom {
+		background-image: url(icons/rightbar/add.svg);
+	}
+	#up-container {
+		position:absolute;
+		margin:5px;
+	}
+	#upload-texture {
+		border-radius:24px;
+		height:48px;
+		width:48px;
+		margin:0 !important;
+	}
+
+/* rightbar geometry tab */
+#rightbar-geometry {
+	margin:10px;
+	margin-top:0;
+}
+#rightbar-geometry .Row{
+	margin-top:10px;
+}
+#rightbar-geometry .Text{
+	font-size: 14px;
+	/* margin-top:10px; */
+	/* width:100px; */
+}
+#rightbar-transforms .Integer{
+	width:40px;
+}
+#rightbar-transforms .Number{
+	width:40px;
+}
+
+/* rightbar mechanism tab */
+#rightbar-mechanism {
+	margin:10px;
+	margin-top:0;
+}
+#rightbar-mechanism .Button{
+	height:50px;
+	width:50px;
+	margin:5px;
+	background-size: 80% 80%;
+	border: none;
+	border-radius: 0;
+}
+#rightbar-mechanism button:hover {
+	background-color: #bbb;
+}
+#rightbar-mechanism button.selected {
+	background-color: #bbb;
+}
+	#setAxis {
+		background-image:url(icons/sidebar/axis.svg);
+	}
+	#setContour {
+		background-image:url(icons/sidebar/contour.svg);
+	}
+	#append {
+		background-image:url(icons/sidebar/tree.svg);
+	}
+	#attach {
+		background-image:url(icons/sidebar/tree.svg);
+		transform:rotate(180deg);
+	}
+	#detach {
+		background-image:url(icons/sidebar/detach.svg);
+		transform:rotate(180deg);
+	}
+	#bone {
+		background-image:url(icons/sidebar/bone.svg);
+	}
+	#skeleton {
+		background-image:url(icons/rightbar/skeleton.svg);
+	}
+	#clear-skeleton {
+		background-image:url(icons/leftbar/forbidden.svg);
+	}
+
+#bottombar {
+	position: absolute;
+	bottom: 0;
+	left: 0;
+	width: calc(100% - 4px);
+	height: 25px;
+	border: solid 2px #333;
+}
+#viewport {
+	position: absolute;
+	bottom: 27px;
+	left: 0;
+	width: 100%;
+	height: calc(100% - 81px);
+}
+
+#sidebar  {
+	position: absolute;
+	right: 0;
+	bottom: 0;
+	width: 300px;
+	height: calc(100% - 54px);
+	border: 2px solid #555;
+}
+#sidebar .Button {
+	background-position: center;
+	font-size: 15px;
+	margin: 10px;
+	width: 60px;
+	height: 40px;
+	border-radius: 10px;
+	border: 2px solid #555;
+	background-size:80% 80%;
+}
+#sidebar .Row {
+	margin:20px;
+}
+#sidebar .Number {
+	width: 90px;
+}
+	
+
+/*
+ * loading bar
+ */
+ .Modal {
+	z-index:20;
+}
+#loadingdlg {
+	height: 10%;
+	width: 70%;
+	bottom: 0;
+	left: 0;
+	margin: auto;
+	position: absolute;
+	top: 0;
+	right: 0;
+	background: rgba(3,3,3,0);
+}
+#barbox {
+	width:100%;
+	height:30px;
+	border: solid 2px #fff;
+	border-radius:15px;
+	color:#fff;
+	position: absolute;
+}
+#loadingInfo {
+	text-align: center;
+	color:#000;
+	bottom: 0;
+	left: 0;
+	margin-top:7px;
+	position: absolute;
+	top: 0;
+	right: 0;
+}
+#loadingbar {
+	top:5px;
+	height:20px;
+	left: 1%;
+	position: absolute;
+	background: #ffffff;
+	border-radius:10px;
+}
