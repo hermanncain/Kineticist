@@ -294,7 +294,7 @@ var Viewport = function (sculptor) {
 		if ( onDownPosition.distanceTo( onUpPosition ) >0.01 ) return;
 		if (sculptor.drawMode == 'normal') {
 			var intersects = getIntersects( onUpPosition, castObjects );
-			
+			console.log(castObjects,intersects)
 			if ( intersects.length > 0 ) {
 				let selected = null;
 				// prior: select a point
@@ -642,7 +642,9 @@ var Viewport = function (sculptor) {
 				}
 			}
 			scene.add(sculpture);
-			castObjects = [sculpture];
+			castObjects = [sculpture.axis];
+			castObjects.push(...sculpture.references);
+			castObjects.push(...sculpture.units.children);
 			sceneHelpers.children[0].visible = false;
 		}
 		sculptor.deselect();

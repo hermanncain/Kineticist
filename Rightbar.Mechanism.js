@@ -45,10 +45,10 @@ Rightbar.Mechanism = function (sculptor) {
     var yaw = new UI.Number( 0 ).setUnit( '°' ).onChange( update );
     yawRow.add( yaw );
     // bone shape
-    var boneShapeButton = new UI.Button().setId('bone').onClick(function(){
+    // var boneShapeButton = new UI.Button().setId('bone').onClick(function(){
 
-    });
-    skeletonPanel.add( boneShapeButton );
+    // });
+    // skeletonPanel.add( boneShapeButton );
     // generate skeleton
     var generateSkeletonButton = new UI.Button().setId('skeleton').onClick(generateSkeleton);
     skeletonPanel.add( generateSkeletonButton );

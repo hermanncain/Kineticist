@@ -141,6 +141,7 @@ KineticSculptureBranch.prototype = Object.assign(Object.create(THREE.Object3D.pr
         }
     },
 
+    // sculpture envelope
     buildCurves: function () {
         this.curves.children = []
         let n = this.unit.guides.children.length;
@@ -157,10 +158,11 @@ KineticSculptureBranch.prototype = Object.assign(Object.create(THREE.Object3D.pr
 
     // skeleton
     clearSkeleton: function () {
-        for (bone of this.skeletons) {
-            this.remove(bone);
-        }
-        this.skeletons = [];
+        // for (bone of this.skeletons) {
+        //     this.remove(bone);
+        // }
+        // this.skeletons = [];
+        this.units.children = [];
     },
     
     buildSkeleton: function (dist,freq) {
@@ -214,6 +216,7 @@ KineticSculptureBranch.prototype = Object.assign(Object.create(THREE.Object3D.pr
                     }
                 }
             }
+            // build skeleton curve based on rib curve
             this.units.children[i].guides.children.map(function(r){
                 r.skeleton = true;
                 r.buildCurve();
@@ -223,9 +226,9 @@ KineticSculptureBranch.prototype = Object.assign(Object.create(THREE.Object3D.pr
 
     // mechanisms
 
-    buildUtils: function () {
+    // buildUtils: function () {
 
-    },
+    // },
 
     // motion simulation
     setController: function () {
@@ -234,9 +237,9 @@ KineticSculptureBranch.prototype = Object.assign(Object.create(THREE.Object3D.pr
 
     simulateMotion: function () {
         // rotate skeleton
-        for(bone of this.skeletons){
-            bone.simulate();
-        }
+        // for(bone of this.skeletons){
+        //     bone.simulate();
+        // }
         // rotate units
         for(unit of this.units.children) {
             unit.rotateZ(0.01);
@@ -252,9 +255,9 @@ KineticSculptureBranch.prototype = Object.assign(Object.create(THREE.Object3D.pr
 
     reset: function () {
         // reset skeleton
-        for(bone of this.skeletons){
-            bone.rotation.set(0,0,0);
-        }
+        // for(bone of this.skeletons){
+        //     bone.rotation.set(0,0,0);
+        // }
         // reset units
         for(unit of this.units.children) {
             unit.rotation.copy(unit.metaRotation);

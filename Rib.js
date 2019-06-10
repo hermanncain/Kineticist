@@ -120,8 +120,8 @@ Rib.prototype = Object.assign(Object.create(THREE.Object3D.prototype), {
         var geometry = null;
         var mesh = null;
         if (this.skeleton) {
-            this.setPointSize(0.1);
-            geometry = new THREE.TubeBufferGeometry(this.curve,200,0.1,3);
+            this.setPointSize(0.2);
+            geometry = new THREE.TubeBufferGeometry(this.curve,200,0.1,4);
             mesh = new THREE.Mesh(geometry,new THREE.MeshBasicMaterial({color:0x00ffff}));
             mesh.layers.set(3);
             mesh.name = 'ribcurve';
