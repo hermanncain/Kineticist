@@ -159,3 +159,89 @@ function getCurvatureData(curve, n){
     }
     return {curvature:{min:1/maxKR,max:1/minKR},radius:{min:minKR,max:maxKR}}
 }
+
+
+/**
+ * intersect a open-ended frustum's generatrix with another object
+ * NOTICE: there are unknown bugs of three.js that
+ *         lead to some intersections not detected
+ * @param {THREE.Mesh} frustum1 : with THREE.CylinderGeometry as the geometry
+ * @param {THREE.Mesh} object : another object
+ * @param {float} lambda : safety margin of ray
+ * @param {int} n : number of generatrices
+ * @param {int} j : index of generatrix
+ */
+function generatrixIntersection (frustum1,object,lambda,n,j) {
+    let start = frustum1.localToWorld(frustum1.geometry.vertices[j].clone());
+    let end = frustum1.localToWorld(frustum1.geometry.vertices[n+j].clone());
+    let length = end.distanceTo(start);
+    let direction = new THREE.Vector3().subVectors(end,start).normalize();
+    let ray = new THREE.Raycaster(start,direction,0,length*lambda);
+    // DEBUG
+    // let arrow = new THREE.ArrowHelper(direction,start,length*lambda,0xff0000);
+    // frustum1.parent.add(arrow);
+    // if (unit.type == 'Unit') {
+    //     unit.add(arrow)
+    // }
+    if (ray.intersectObject(object,true).length==0) {
+        // no collision
+        return false;
+    } else {
+        // collision
+        return true;
+    }
+}
+
+//
+// function generatrixIntersectionClosed (frustum1,object,lambda,n,j) {
+//     let start = frustum1.localToWorld(frustum1.geometry.vertices[j].clone());
+//     let end = frustum1.localToWorld(frustum1.geometry.vertices[n+j].clone());
+//     let length = end.distanceTo(start);
+//     let direction = new THREE.Vector3().subVectors(end,start).normalize();
+//     let ray = new THREE.Raycaster(start,direction,0,length*lambda);
+//     let arrow = new THREE.ArrowHelper(direction,start,length*lambda);
+//     let unit = frustum1.parent.parent;
+//     if (unit.type == 'Unit') {
+//         unit.parent.add(arrow)
+//     }
+//     // frustum1.traverseAncestors(function(obj){
+//     //     console.log(obj.name)
+//     //     if (obj.type == 'Scene') {
+//     //         obj.add(arrow);
+//     //     }
+//     // });
+//     if (ray.intersectObject(object,true).length==0) {
+//         // no collision
+//         return false;
+//     } else {
+//         // collision
+//         return true;
+//     }
+// }
+
+function sample(vMin,vMax,n) {
+    let r = [];
+    let range = vMax-vMin;
+    for (let i=0;i<n;i++) {
+        r.push(vMin + Math.random() * range);
+    }
+    return r;
+}
+
+function pointsToPlane(points=[],plane=new THREE.Plane(),dir=new THREE.Vector3(0,0,1)) {
+    let r = [];
+    for (let pt of points) {
+        let pp = new THREE.Vector3();
+        let start = pt.clone().add(dir.clone().multiplyScalar(100));
+        let end = pt.clone().add(dir.clone().multiplyScalar(-100));
+        let line3 = new THREE.Line3(start,end);
+        if (plane.intersectLine(line3, pp)) {
+            r.push(pp);
+        }
+    }
+    if (r.length<points.length) {
+        return false;
+    } else {
+        return r;
+    }
+}

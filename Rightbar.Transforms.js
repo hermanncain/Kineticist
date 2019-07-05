@@ -46,13 +46,13 @@ Rightbar.Transforms = function (sculptor) {
 
     container.add( new UI.HorizontalRule() );
 
-    var innerTransform = Rightbar.Transforms.Inner(sculptor);
-    container.add(innerTransform);
+    var morphTrans = Rightbar.MorphTransforms(sculptor);
+    container.add(morphTrans);
 
     var singleOp = new UI.Panel();
     container.add(singleOp);
     // servo cylindircal coords
-    singleOp.add(new UI.Text('servo cylindrical').setFontSize('16px').setMargin('5px'));
+    singleOp.add(new UI.Text('Cylindrical RCS').setFontSize('16px').setMargin('5px'));
     var cylindricals = new UI.Row();
     singleOp.add(cylindricals);
     cylindricals.add(new UI.Text('r').setMargin('5px').setMarginLeft('25px').setMarginRight('25px'));
@@ -70,7 +70,7 @@ Rightbar.Transforms = function (sculptor) {
     singleOp.add( new UI.HorizontalRule() );
 
     // servo euclidean coords
-    singleOp.add(new UI.Text('servo euclidean').setFontSize('16px').setMargin('5px'));
+    singleOp.add(new UI.Text('Cartesian RCS').setFontSize('16px').setMargin('5px'));
     var seuclidean = new UI.Row();
     singleOp.add(seuclidean);
     seuclidean.add(new UI.Text('R').setFontSize('15px').setMargin('5px').setMarginLeft('24px').setMarginRight('24px'));
@@ -116,7 +116,7 @@ Rightbar.Transforms = function (sculptor) {
 
     function updateServoEuclideanUI(object) {
         let rib = object.parent.parent;
-        let se = rib.pointToRib(object.position);
+        let se = rib.unitToRib(object.position);
         if (object.name=='vp') {
             seTTitle.setDisplay('none');
             seT.setDisplay('none');
@@ -139,7 +139,7 @@ Rightbar.Transforms = function (sculptor) {
             objectRotationRow.setDisplay('none');
             objectScaleRow.setDisplay('none');
             singleOp.setDisplay('');
-            innerTransform.setDisplay('none');
+            morphTrans.setDisplay('none');
             updateCynlidricalUI(obj);
             updateServoEuclideanUI(obj);
         } else if (obj instanceof Rib) {
@@ -147,25 +147,25 @@ Rightbar.Transforms = function (sculptor) {
             objectRotationRow.setDisplay('');
             objectScaleRow.setDisplay('');
             singleOp.setDisplay('none');
-            innerTransform.setDisplay('none');
+            morphTrans.setDisplay('none');
         } else if (obj instanceof Unit) {
             objectPositionRow.setDisplay('none');
             objectRotationRow.setDisplay('');
             objectScaleRow.setDisplay('');
             singleOp.setDisplay('none');
-            innerTransform.setDisplay('');
+            morphTrans.setDisplay('');
         } else if (obj.name == 'control point') {
             objectPositionRow.setDisplay('');
             objectRotationRow.setDisplay('none');
             objectScaleRow.setDisplay('none');
             singleOp.setDisplay('none');
-            innerTransform.setDisplay('none');
+            morphTrans.setDisplay('none');
         } else if (obj.parent instanceof Sketch) {
             objectPositionRow.setDisplay('');
             objectRotationRow.setDisplay('');
             objectScaleRow.setDisplay('');
             singleOp.setDisplay('none');
-            innerTransform.setDisplay('none');
+            morphTrans.setDisplay('none');
         }
         selectedName.setValue(obj.name);
     });

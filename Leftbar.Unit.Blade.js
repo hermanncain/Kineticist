@@ -5,7 +5,7 @@ Leftbar.Unit.Blade = function (sculptor) {
     var container = new UI.Panel().setId('leftbar-unit-blade');
     container.setDisplay('none');
 
-    container.add(new UI.Text('Blade sweeping'));
+    // container.add(new UI.Text('Sweeping'));
 
     // section shape
     var ellipseRow = new UI.Row();

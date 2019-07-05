@@ -47,7 +47,7 @@ Rightbar.Scene = function (sculptor) {
     
     // camera transforms
     let camTransRow = new UI.Row().setWidth('180px')//.setMarginLeft('20px');
-    cameraRow.add(camTransRow);
+    // cameraRow.add(camTransRow);
     camTransRow.add(new UI.Text('perspective').setWidth('100%').setMargin('10px'));
     // front
     let frontView = new UI.Button().setId('front-view').onClick(update);
@@ -70,10 +70,14 @@ Rightbar.Scene = function (sculptor) {
 
     container.add(new UI.HorizontalRule());
 
+    // materials
+
+    container.add(new UI.Text('Material').setFontSize('20px'));
+
     // scene
     var sceneRow = new UI.Row().setId('scene-row');
     container.add(sceneRow);
-    sceneRow.add(new UI.Text('Scene background').setFontSize('20px'));
+    sceneRow.add(new UI.Text('Scene').setMargin('10px'));
 
     // scene material
     var sceneBackgroundButtons = [];
@@ -81,7 +85,7 @@ Rightbar.Scene = function (sculptor) {
     sceneRow.add(sceneMatRow);
     
     (function (){
-        for (let name in sculptor.sceneBackgroundLib) {
+        for (let name in backgrounds) {
             var bt = new UI.Button().setId(name).onClick(function(){
                 updateSceneBackground(name);
             });
@@ -90,73 +94,30 @@ Rightbar.Scene = function (sculptor) {
         }
     })();
 
-    container.add(new UI.HorizontalRule());
-
-    // unit
+    // unit material
     var unitRow = new UI.Row().setId('unit-row');
     container.add(unitRow);
-    unitRow.add(new UI.Text('Unit Material').setFontSize('20px'));
+    unitRow.add(new UI.Text('Unit').setMargin('10px'));
 
-    // unit material
-    var unitMatButtons = [];
-    var unitMatRow = new UI.Row();
-    unitRow.add(unitMatRow);
-
-    (function () {
-        for (let name of sculptor.materialNames) {
-            var bt = new UI.Button().setId(name).onClick(function(){
-                updateUnitMaterial(name);
-            });
-            unitMatRow.add(bt);
-            unitMatButtons.push(bt);
-        }
-    }) ();
-
-    var uploadTexture = new UI.Texture().setDisplay('none').onChange(function(texture){
-        sculptor.materials['custom'].map = uploadTexture.getValue();
-        sculptor.materials['custom'].needsUpdate = true;
-    });
-    uploadTexture.dom.id = 'up-container';
-    uploadTexture.dom.children[0].id = 'upload-texture';
-    unitMatRow.add(uploadTexture);
-
-    // global material control
-    var shaderRow = new UI.Row()//.setId('shader-row');
-    container.add(shaderRow);
-    // shaderRow.add(new UI.Text('Effect').setFontSize('20px'));
-    // wireframe
-    shaderRow.add(new UI.Text('wireframe'));
-    var wireframe = new UI.Checkbox().onChange(function(){
-        let flag = wireframe.getValue();
-        if (flag) {
-            sculptor.unitMaterial.wireframe = true;
-        } else {
-            sculptor.unitMaterial.wireframe = false;
+    var unitMaterial = new UI.Select().setWidth('80px').setMarginLeft('20px').onChange(function(){
+        let mat = unitMaterial.getValue();
+        switch (mat) {
+            case '0':
+                sculptor.setMaterial(grayMaterial);
+            break;
+            case '1':
+                sculptor.setMaterial(metalMaterial);
+            break;
+            case '2':
+                sculptor.setMaterial('color');
+            break;
         }
     });
-    shaderRow.add(wireframe)
-    // colored
-    shaderRow.add(new UI.Text('colored').setMarginLeft('10px'));
-    var colored = new UI.Checkbox().onChange(function(){
-        let flag = colored.getValue();
-        if (flag) {
-            for (let u of sculptor.sculpture.units.children) {
-                let m1 = new THREE.MeshStandardMaterial({color:0x33CCFF,/* emissive: 0x464646, */ roughness:1, metalness:0});
-                let m2 = new THREE.MeshStandardMaterial({color:0x009966,/* emissive: 0x464646, */ roughness:1, metalness:0});
-                let m3 = new THREE.MeshStandardMaterial({color:0xFF6633,/* emissive: 0x464646, */ roughness:1, metalness:0});
-                u.sleeve.children[0].material = m1;
-                u.accessories.children.map(function(a){a.material = m2});
-                u.transmissions.children.map(function(a){a.material = m3});
-            }
-        } else {
-            for (let u of sculptor.sculpture.units.children) {
-                u.setMaterial(sculptor.unitMaterial)
-            }
-        }
-    });
-    shaderRow.add(colored)
-
-    //
+    unitRow.add(unitMaterial);
+    unitMaterial.setMultiple = false;
+    unitMaterial.setOptions(['gray','metal','colored']);
+    unitMaterial.setValue(0);
+    
     function updateLayer (layer) {
         var mask = sculptor.camera.layers.mask.toString(2);
         while (mask.length<=sculptor.camLayers) {
@@ -188,7 +149,6 @@ Rightbar.Scene = function (sculptor) {
         }
     }
 
-    //
     function updateSceneBackground(name) {
         if (sculptor.scenes.unitScene.background.name == name) {
             return;
@@ -198,23 +158,7 @@ Rightbar.Scene = function (sculptor) {
         }
     }
 
-    function updateUnitMaterial (name) {
-        
-        if (sculptor.unitMaterial.name == name) {
-            return;
-        } else {
-            sculptor.setUnitMaterial( name );
-            if (name == 'custom') {
-                uploadTexture.setDisplay('');
-            } else {
-                uploadTexture.setDisplay('none');
-            }
-            updateMatUI();
-        }
-    }
-
     function updateMatUI () {
-        // scene material
         for (let b of sceneBackgroundButtons) {
             if (b.dom.id == sculptor.scenes.unitScene.background.name) {
                 b.dom.classList.add('selected');
@@ -226,14 +170,6 @@ Rightbar.Scene = function (sculptor) {
             sceneBackgroundButtons[0].dom.classList.add('selected');
         } else {
             sceneBackgroundButtons[0].dom.classList.remove('selected');
-        }
-        // unit material
-        for (let b of unitMatButtons) {
-            if (b.dom.id == sculptor.unitMaterial.name) {
-                b.dom.classList.add('selected');
-            } else {
-                b.dom.classList.remove('selected');
-            }
         }
     }
 

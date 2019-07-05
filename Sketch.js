@@ -1,54 +1,50 @@
 /**
  * @class Sketch
+ * @params {string} name
+ * @params {Array} or {Object} data
+ * @params {string} role
  * basic class of all sketch lines
+ * sketche's matrix is constant and the same with world
  */
-
-const lineColors = {selected:0xffaa00, axis:0xff0000, contour:0x0000ff, reference:0x00ff00};
-const lineModes = {gl:'gl', fatline:'fatline', tube:'tube'};
-var lineMode = lineModes.tube;
-const lineWidths = {contour:1, axis:2, selected:3};
-
-function Sketch (curveName='line', keyPoints=[], parameters, curveType='contour') {
+function Sketch (name='line', keyPoints=[], parameters, role='sketch', closed=false) {
 
     THREE.Object3D.call(this);
 
-    // general attributes
-    // sketch information
-    this.type = 'sketch';
-    this.curveType = curveType; //axis or contour
-    // this.closed = false;
+    // General attributes
+    this.type = 'Sketch';
+    this.name = name;
+    this.role = role;
+    this.timeOrder = 0;
+    this.closed = closed;
     this.selected = false;
-    // key points
+
+    // Inner parameters
     this.pointSize = 0.3;
-    // lines
     this.width = 2;
     this.curveResolution = 50;
-    this.materials = {
-        //due to the webgl remaining issue, width won't work
-        gl: new THREE.LineBasicMaterial({linewidth: this.width,color:0x0000ff}),
-        fatline: new THREE.LineMaterial( {linewidth: this.width, resolution:new THREE.Vector2(500,500),color:0x0000ff} ),
-        tube: new THREE.MeshBasicMaterial({color:0x0000ff}),
-        // point: new THREE.MeshBasicMaterial()
-    };
-    // basic data
-    this.name = curveName;
+    if (lineMode == 'gl') {
+        this.material = new THREE.LineBasicMaterial({linewidth: this.width,color:lineColors[role]});
+    } else if (lineMode == 'tube') {
+        this.material = new THREE.MeshBasicMaterial({color:lineColors[role]});
+    }
+
+    // construction data
     this.parameters = parameters;
     this.keyPoints = keyPoints;
     this.curve = null;
 
-    // secondary data
-    // draw related
+    // drawing data
     this.densePoints = [];
     this.denseLines = [];
 
     // computing data
-    // skeleton related
     this.samplingPoints = [];
     this.samplingTangents = [];
     this.samplingNormalPlanes = [];
     
     // meshes
-    this.pointMeshes = []//new THREE.Group();
+    this.pointMeshes = []
+    this.curveMesh = null;
 
     // initialize only when the sketch has parameters or keypoints
     if (this.parameters || this.keyPoints.length) {
@@ -61,9 +57,27 @@ Sketch.prototype = Object.assign(Object.create(THREE.Object3D.prototype), {
 
     constructor: Sketch,
 
-    setCurveType: function (type) {
-        if (this.curveType == type) return;
-        this.curveType = type;
+    clone: function () {
+        return new Sketch().fromJSON(this.toJSON());
+    },
+
+    dispose: function () {
+        this.traverse( function(obj) {
+            if (obj.geometry) {
+                obj.geometry.dispose();
+            }
+            if (obj.material) {
+                obj.material.dispose();
+            }
+        });
+    },
+
+
+    // Color controls
+
+    setRole: function (role) {
+        if (this.role == role) return;
+        this.role = role;
         if (this.selected) {
             this.select();
         } else {
@@ -71,58 +85,50 @@ Sketch.prototype = Object.assign(Object.create(THREE.Object3D.prototype), {
         }
     },
 
+    setTimeOrder: function (i) {
+        this.role = 'contour';
+        this.timeOrder = i;
+        this.setMaterialColor(timeOrderColors[i]);
+    },
+
     select: function () {
         this.selected = true;
-        switch (lineMode) {
-            // fatline: wider line
-            case lineModes.fatline:
-                this.width = lineWidths.selected;
-            break;
-            // tube: light effect on
-            case lineModes.tube:
-            break;
-        }
         this.setMaterialColor(lineColors.selected);
     },
 
     deselect: function () {
         this.selected = false;
-        switch (lineMode) {
-            // fatline: wider line
-            case lineModes.fatline:
-                this.width = lineWidths[this.curveType];
-            break;
-            // tube: light effect on
-            case lineModes.tube:
-            break;
+        if (this.timeOrder > 0) {
+            this.setMaterialColor(timeOrderColors[this.timeOrder]);
+        } else {
+            this.setMaterialColor(lineColors[this.role]);
         }
-        this.setMaterialColor(lineColors[this.curveType]);
     },
 
     setMaterialColor: function (hex) {
-        for (key in this.materials) {
-            this.materials[key].color.setHex(hex);
-        }
+        this.material.color.setHex(hex);
         for (pt of this.pointMeshes) {
             pt.material.color.setHex(hex);
         }
     },
 
+
+    // Build geometry and meshes
+
     buildCurve: function () {
         // initialize the empty curve array
         this.curve = new THREE.CurvePath();
-        // conditions
+        
         if (this.parameters!== undefined) {
             let generateCurve = curveMap[this.name];
             let curve = generateCurve(this.parameters);
             this.curve.add(curve);
-            if(curve.closed) {
-                this.curve.autoClose = true;
-            };
-        } else {
+            this.closed = curve.closed;
+        } else if (this.keyPoints.length>0) {
+            
             switch(this.name) {
                 case 'line':
-                    // this.curve = new THREE.CurvePath();
+                    // 
                     for (let i=0;i<this.keyPoints.length-1;i++) {
                         this.curve.add(new THREE.LineCurve3(this.keyPoints[i], this.keyPoints[i+1]));
                     }
@@ -130,24 +136,24 @@ Sketch.prototype = Object.assign(Object.create(THREE.Object3D.prototype), {
                 case 'spline':
                 case 'brush2d':
                 case 'brush3d':
-                    let curve = new THREE.CatmullRomCurve3(this.keyPoints);
-                    curve.curveType = 'chordal';
+                    let curve = new THREE.CatmullRomCurve3(this.keyPoints,this.closed);
+                    curve.role = 'chordal';
                     this.curve.add(curve);
                 break;
             }
-            // this.is2D = true;
         }
+        this.curve.autoClose = this.closed;
     },
 
     buildGeometry: function () {
-        // clear secondary data
+        // clear drawing data
         this.densePoints = [];
         this.denseLines = [];
         var geometry = null;
 
         // dynamic modify curveResolution based on curve length
         this.curveResolution = 10*Math.ceil(this.curve.getLength()+1);
-        // update secondary data and serialize points
+        // update drawing data and serialize points
         this.densePoints = this.name=='line'? this.keyPoints:this.curve.getPoints( this.curveResolution );
         var n = this.densePoints.length;
         switch (lineMode) {
@@ -158,20 +164,16 @@ Sketch.prototype = Object.assign(Object.create(THREE.Object3D.prototype), {
                     geometry.vertices.push(this.densePoints[i]);
                 }
                 geometry.vertices.push(this.densePoints[n-1]);
-            break;
-            case lineModes.fatline:
-                geometry = new THREE.LineGeometry();
-                var pts = [];
-                for (let i=0;i<n-1;i++) {
-                    this.denseLines.push(new THREE.Line3(this.densePoints[i],this.densePoints[i+1]));
-                    pts.push(this.densePoints[i].x,this.densePoints[i].y,this.densePoints[i].z);
+                if (this.curve.autoClose) {
+                    geometry.vertices.push(this.densePoints[0]);
                 }
-                pts.push(this.densePoints[n-1].x,this.densePoints[n-1].y,this.densePoints[n-1].z);
-                geometry.setPositions( pts );
             break;
             case lineModes.tube:
                 for (let i=0;i<n-1;i++) {
                     this.denseLines.push(new THREE.Line3(this.densePoints[i],this.densePoints[i+1]));
+                }
+                if (this.curve.autoClose) {
+                    this.denseLines.push(new THREE.Line3(this.densePoints[n-1],this.densePoints[0]));
                 }
                 geometry = new THREE.TubeBufferGeometry(this.curve,this.curveResolution/2,this.width/20,3,this.curve.autoClose);
             break;
@@ -180,16 +182,10 @@ Sketch.prototype = Object.assign(Object.create(THREE.Object3D.prototype), {
     },
 
     buildPointMesh: function () {
-        // clear old point meshes
-        for (pm of this.pointMeshes) {
-            this.remove(pm);
-        }
-        this.pointMeshes = [];
-        // push new point meshes
         for (let p of this.keyPoints) {
             let pointGeometry = new THREE.BufferGeometry();
             pointGeometry.addAttribute( 'position', new THREE.BufferAttribute( new Float32Array([0, 0, 0]), 3 ) );
-            let pointMesh = new THREE.Points(pointGeometry,new THREE.PointsMaterial( { color: this.materials.gl.color } ));
+            let pointMesh = new THREE.Points(pointGeometry,new THREE.PointsMaterial( { color: this.material.color } ));
             pointMesh.name = 'control point';
             // Layer 1: points
             pointMesh.layers.set(1);
@@ -201,41 +197,48 @@ Sketch.prototype = Object.assign(Object.create(THREE.Object3D.prototype), {
 
     buildMesh: function () {
         
-        // clear meshes
+        // free old point meshes' materials and geometries
+        for (pt of this.pointMeshes) {
+            if (pt.material) {
+                pt.material.dispose();
+            }
+            if (pt.geometry) {
+                pt.geometry.dispose();
+            }
+        }
+        this.pointMeshes = [];
+        // free old curve mesh's geometry
+        if (this.curveMesh) {
+            this.curveMesh.geometry.dispose();
+        }
+        this.curveMesh = null;
+        // clear children
         this.children = [];
 
-        // build curves
-        this.setCurveType(this.curveType);
+        // build new curves
+        this.setRole(this.role);
         this.buildCurve();
 
+        // build meshes
         switch (lineMode) {
             case lineModes.gl:
-                var line = new THREE.Line(this.buildGeometry(), this.materials[lineMode]);
-                line.layers.set(2);
-                line.name = 'sketch line';
-                this.add(line);
-            break;
-            case lineModes.fatline:
-                var line = new THREE.FatLine(this.buildGeometry(),this.materials[lineMode]);
-                line.layers.set(2);
-                line.name = 'sketch line';
-                line.computeLineDistances();
-                this.add(line);
+                this.curveMesh = new THREE.Line(this.buildGeometry(), this.material);
             break;
             case lineModes.tube:
-                var line = new THREE.Mesh(this.buildGeometry(),this.materials[lineMode]);
-                line.layers.set(2);
-                line.name = 'sketch line';
-                this.add(line);
+                this.curveMesh = new THREE.Mesh(this.buildGeometry(),this.material);
             break;
         }
+        this.curveMesh.layers.set(2);
+        this.curveMesh.name = 'sketch line';
+        this.add(this.curveMesh);
 
         // build point meshes of for curves controlled by origin key points
-        if (this.name=='line'||this.name=='spline') {
+        if (this.keyPoints.length>0) {
             this.buildPointMesh();
         }
     },
 
+    // Computing geometries
     // reduce key points of free draw curves
     reduce: function () {
         if (this.name!='brush2d'&&this.name!='brush3d') return;
@@ -245,6 +248,7 @@ Sketch.prototype = Object.assign(Object.create(THREE.Object3D.prototype), {
         this.buildMesh();
     },
 
+    // sampling results are world coordinate system (WCS) values
     sample: function (freq, type='curvature') {
         if (this.curve.getLength()==0) return;
         // clear computing data
@@ -265,8 +269,8 @@ Sketch.prototype = Object.assign(Object.create(THREE.Object3D.prototype), {
                 pt = this.curve.getPoint(i/divisions).clone();
                 tg = this.curve.getTangent(i/divisions).clone();
             }
-            pt.applyMatrix4(this.children[0].matrix);
-            tg.applyQuaternion(this.children[0].quaternion);
+            pt.applyMatrix4(this.curveMesh.matrix);
+            tg.applyQuaternion(this.curveMesh.quaternion);
             tg.normalize();
             this.samplingPoints.push(pt);
             this.samplingTangents.push(tg);
@@ -277,9 +281,9 @@ Sketch.prototype = Object.assign(Object.create(THREE.Object3D.prototype), {
             ff = this.curve.computeFrenetFrames(this.samplingPoints.length-1,this.curve.autoClose);
         }
         for (let i = 0;i<ff.tangents.length;i++) {
-            ff.normals[i].applyQuaternion(this.children[0].quaternion);
-            ff.binormals[i].applyQuaternion(this.children[0].quaternion);
-            ff.tangents[i].applyQuaternion(this.children[0].quaternion);
+            ff.normals[i].applyQuaternion(this.curveMesh.quaternion);
+            ff.binormals[i].applyQuaternion(this.curveMesh.quaternion);
+            ff.tangents[i].applyQuaternion(this.curveMesh.quaternion);
         }
         this.ff = ff;
         // console.log(ff)
@@ -304,7 +308,7 @@ Sketch.prototype = Object.assign(Object.create(THREE.Object3D.prototype), {
         for (let i=0;i<this.samplingPoints.length;i++) {
             
             let planeCenter = this.samplingPoints[i].clone();
-            let pt = curve.intersectWithWidePlane(planeCenter, this.samplingNormalPlanes[i]);
+            let pt = curve.getNearestIntersection(planeCenter, this.samplingNormalPlanes[i]);
             if (!pt) {
                 tangents.push(null);
                 normals.push(null);
@@ -322,30 +326,59 @@ Sketch.prototype = Object.assign(Object.create(THREE.Object3D.prototype), {
         return {tangents: tangents, normals: normals, binormals: binormals};
     },
 
-    intersectWithWidePlane: function (planeCenter, plane) {
-        var point = new THREE.Vector3();
-        var lines = [];
-        let minDist = 1000;
-        let r = null;
-        for (line of this.denseLines) {
-            lines.push(line.clone().applyMatrix4(this.matrix));
-        }
-        for (line of lines) {
-            if (!plane.intersectsLine(line)) {
-                continue;
-            } else {
-                plane.intersectLine(line,point);
-                let dist = point.distanceTo(planeCenter);
-                if (dist<minDist) {
-                    r = point.clone();
-                    minDist = dist;
-                }
+    // inaccurate
+    getNearestIntersection: function (planeCenter, plane) {
+        // TODO: use local plane to save computing cost
+        // let center = this.curveMesh.worldToLocal(planeCenter.clone());
+        // let normal = this.curveMesh.worldToLocal()
+        let minDist = Infinity;
+        let result = null;
+        // get all intersecting points
+        let points = this.getIntersections(planeCenter,plane);
+        // return the nearest one
+        for (let point of points) {
+            let dist = point.distanceTo(planeCenter);
+            if (dist<minDist) {
+                result = point.clone();
+                minDist = dist;
             }
         }
-        return r;
+        return result;
     },
 
-    // build skeletons with this sketches as the axis and other curves as contours
+    getIntersections: function (planeCenter,plane,distance=Infinity) {
+        let resultPoints = [];
+        let tempPoint = new THREE.Vector3();
+        for (line of this.denseLines) {
+            let lineWorld = line.clone().applyMatrix4(this.curveMesh.matrix);
+            if (plane.intersectLine(lineWorld,tempPoint)==undefined) {
+                continue;
+            }
+            if (tempPoint.distanceTo(planeCenter)<distance) {
+                resultPoints.push(tempPoint.clone());
+            }
+        }
+        return resultPoints;
+    },
+
+    getNormalIntersectionsWithCurves: function (sketches,distance=Infinity) {
+        let results = [];
+        for (let i=0;i<this.samplingPoints.length;i++) {
+            let intersections = [];
+            let plane = this.samplingNormalPlanes[i];
+            let center = this.samplingPoints[i];
+            for (sketch of sketches) {
+                let ist = sketch.getIntersections(center,plane,distance);
+                if (ist.length>0) {
+                    intersections.push(...ist);
+                }
+            }
+            results.push(intersections);
+        }
+        return results;
+    },
+
+    // build skeletons with this sketches as the axis and other curves as sketches
     generateSkeleton: function (curves, dist = 1000, freq = 50 ) {
         // get sampling center and planes
         this.sample(freq);
@@ -358,7 +391,7 @@ Sketch.prototype = Object.assign(Object.create(THREE.Object3D.prototype), {
     },
 
     // get intersect points of this sketch and others' normal planes
-    intersectWithPlanes: function (planeCenters, planes,dist) {
+    intersectWithPlanes: function (planeCenters, planes,dist=100) {
         if (planeCenters.length != planes.length) {
             alert('unequal lengths of plane and plane centers!');
             return;
@@ -407,7 +440,9 @@ Sketch.prototype = Object.assign(Object.create(THREE.Object3D.prototype), {
     toJSON: function () {
         return {
             name: this.name,
-            curveType: this.curveType,
+            role: this.role,
+            timeOrder: this.timeOrder,
+            colsed: this.closed,
             parameters: this.parameters,
             keyPoints: this.keyPoints.map(function(v){return v.toArray();}),
             matrix: this.matrix.toArray(),
@@ -416,12 +451,14 @@ Sketch.prototype = Object.assign(Object.create(THREE.Object3D.prototype), {
 
     fromJSON: function (data) {
         this.name = data.name;
-        // this.curveType = data.curveType;
+        this.role = data.role?data.role:'contour';
+        this.timeOrder = data.timeOrder?data.timeOrder:0;
+        this.closed = data.closed;
         this.parameters = data.parameters;
         this.keyPoints = data.keyPoints.map(function(v){return new THREE.Vector3().fromArray(v);});
         this.buildMesh();
         this.applyMatrix(new THREE.Matrix4().fromArray(data.matrix));
-        this.setCurveType(data.curveType);
+        this.setRole(data.role);
         return this;
     },
 });

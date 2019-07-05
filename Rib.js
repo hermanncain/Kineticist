@@ -15,27 +15,27 @@ function Rib (end) {
 
     THREE.Object3D.call(this);
 
-    // BUG: cannot assign rib a name or type
-    this.name == 'Rib';
+    this.type = 'Rib';
     this.skeleton =false;
-    
+
     // container for rotation
     this.endContainer = new THREE.Group();
     this.point1Container = new THREE.Group();
     this.point2Container = new THREE.Group();
     this.curveContainer = new THREE.Group();
-    this.decContainer = new THREE.Group();
-    this.add(this.endContainer,this.point1Container,this.point2Container,this.curveContainer,this.decContainer);
+    this.markContainer = new THREE.Group();
+    this.add(this.endContainer,this.point1Container,this.point2Container,this.curveContainer,this.markContainer);
 
     // data
-    this.start = new THREE.Vector3();
     if(end) this.setEnd(end);
+    this.start = new THREE.Vector3();
+    this.endPosition = null;
     this.p1 = null;
     this.p2 = null;
     this.curve = null;
-    this.decs = [];
-    this.biased = false;
-    this.endPosition = null;
+    this.marks = [];
+
+    this.translated = false;
 
     this.curveMaterial = new THREE.LineBasicMaterial({color:0x0000ff});
 
@@ -46,9 +46,12 @@ Rib.prototype = Object.assign(Object.create(THREE.Object3D.prototype), {
     constructor: Rib,
 
     clone: function () {
+
         // clone end first
+        // material must be cloned, otherwise it will be shared
         let cloneEnd = this.end.clone();
         cloneEnd.material = this.end.material.clone();
+
         // build rib clone
         let rib = new Rib(cloneEnd);
         rib.curveMaterial = this.curveMaterial.clone();
@@ -62,6 +65,17 @@ Rib.prototype = Object.assign(Object.create(THREE.Object3D.prototype), {
         rib.applyMatrix(this.matrix);
         rib.buildCurve();
         return rib;
+    },
+
+    dispose: function () {
+        this.traverse(function(obj){
+            if (obj.geometry) {
+                obj.geometry.dispose();
+            }
+            if (obj.material) {
+                obj.material.dispose();
+            }
+        });
     },
 
     setEnd: function (end) {
@@ -109,7 +123,7 @@ Rib.prototype = Object.assign(Object.create(THREE.Object3D.prototype), {
         // mesh.layers.set(3);
         // this.curveContainer.add(mesh);
         this.buildGeometry(pts)
-        if (!this.biased) {
+        if (!this.translated) {
             this.endPosition = this.end.position.clone().applyMatrix4(this.endContainer.matrix);
             this.p1Position = this.p1.position.clone().applyMatrix4(this.point1Container.matrix);
             this.p2Position = this.p2.position.clone().applyMatrix4(this.point2Container.matrix);
@@ -121,7 +135,7 @@ Rib.prototype = Object.assign(Object.create(THREE.Object3D.prototype), {
         var mesh = null;
         if (this.skeleton) {
             this.setPointSize(0.2);
-            geometry = new THREE.TubeBufferGeometry(this.curve,200,0.1,4);
+            geometry = new THREE.TubeBufferGeometry(this.curve,200,0.05,4);
             mesh = new THREE.Mesh(geometry,new THREE.MeshBasicMaterial({color:0x00ffff}));
             mesh.layers.set(3);
             mesh.name = 'ribcurve';
@@ -184,39 +198,49 @@ Rib.prototype = Object.assign(Object.create(THREE.Object3D.prototype), {
         }
     },
 
-    // rib space
-    // servo euclidean coordinates
-    pointToRib: function (v) {
+    // Coordiante transformations
+
+    // transformations between the Unit Coordiante System (UCS) and 
+    // the Rib Coordinate System (RCS)
+    // UCS -> RCS
+    unitToRib: function (vUCS) {
         let theta = Math.atan2(this.end.position.y,this.end.position.x);
         let euler = new THREE.Euler(0,0,-theta);
-        return v.clone().applyEuler(euler);
+        let vRCS = vUCS.clone().applyEuler(euler);
+        return vRCS;
     },
-    ribToPoint: function (v) {
+    // RCS -> UCS
+    ribToUnit: function (vRCS) {
         let theta = Math.atan2(this.end.position.y,this.end.position.x);
         let euler = new THREE.Euler(0,0,theta);
-        return v.clone().applyEuler(euler);
+        let vUCS = vRCS.clone().applyEuler(euler);
+        return vUCS;
     },
     allPointsToRib: function () {
-        let p1 = this.pointToRib(this.p1.position);
-        let p2 = this.pointToRib(this.p2.position);
-        let p3 = this.pointToRib(this.end.position);
-        return [p1,p2,p3]
+        let p1 = this.unitToRib(this.p1.position);
+        let p2 = this.unitToRib(this.p2.position);
+        let p3 = this.unitToRib(this.end.position);
+        return [p1,p2,p3];
     },
-    updatePointFromRib: function (p,v) {
-        p.copy(this.ribToPoint(v));
+    updatePointFromRib: function (vUCS,vRCS) {
+        vUCS.copy(this.ribToUnit(vRCS));
         if (this.curve) {
             this.buildCurve();
         }
     },
-    updatePointsFromRib: function (v1,v2) {
-        this.p1.position.copy(this.ribToPoint(v1));
-        this.p2.position.copy(this.ribToPoint(v2));
+    updatePointsFromRib: function (vRCS1,vRCS2) {
+        this.p1.position.copy(this.ribToUnit(vRCS1));
+        this.p2.position.copy(this.ribToUnit(vRCS2));
         if (this.curve) {
             this.buildCurve();
         }
     },
 
-    // shape semantics
+
+    // Shape semantics
+    // comprise 3 mean-deviation pairs
+
+    // Radical bias \mu_r
     getBias: function () {
         let [p1,p2,p3] = this.allPointsToRib();
         return (p1.x+p2.x)/p3.x-1;
@@ -229,6 +253,7 @@ Rib.prototype = Object.assign(Object.create(THREE.Object3D.prototype), {
         this.updatePointsFromRib(p1,p2);
     },
 
+    // Radical separation \sigma_r
     getSep: function () {
         let [p1,p2,p3] = this.allPointsToRib();
         return (p2.x-p1.x)/p3.x;
@@ -241,6 +266,7 @@ Rib.prototype = Object.assign(Object.create(THREE.Object3D.prototype), {
         this.updatePointsFromRib(p1,p2);
     },
 
+    // Tangent bending \mu_t
     getTangentArch: function () {
         let [p1,p2,p3] = this.allPointsToRib();
         return -(p1.y+p2.y)/p3.x;
@@ -254,6 +280,7 @@ Rib.prototype = Object.assign(Object.create(THREE.Object3D.prototype), {
         this.updatePointsFromRib(p1,p2);
     },
 
+    // Tangent waveness \sigma_t
     getTangentWave: function () {
         let [p1,p2,p3] = this.allPointsToRib();
         return (p2.y-p1.y)/p3.x;
@@ -267,6 +294,7 @@ Rib.prototype = Object.assign(Object.create(THREE.Object3D.prototype), {
         this.updatePointsFromRib(p1,p2);
     },
 
+    // Axial bending \mu_a
     getAxialArch: function () {
         let [p1,p2,p3] = this.allPointsToRib();
         let theta = Math.atan2(p3.z,p3.x);
@@ -282,6 +310,7 @@ Rib.prototype = Object.assign(Object.create(THREE.Object3D.prototype), {
         }
     },
 
+    // Axial waveness \sigma_a
     getAxialWave: function () {
         let [p1,p2,p3] = this.allPointsToRib();
         let theta = Math.atan2(p3.z,p3.x);
@@ -300,40 +329,9 @@ Rib.prototype = Object.assign(Object.create(THREE.Object3D.prototype), {
         }
     },
 
-    getTNB: function(t) {
-        let tangent = this.curve.getTangent(t);
-        return tangent.applyMatrix4(this.endContainer.matrix).applyMatrix4(this.matrix);
-        let ff = this.curve.computeFrenetFrames(200);
-        let i = Math.floor(t*ff.normals.length);
-        if (i==201) i--;
-        return ff.tangents[i].applyMatrix4(this.endContainer.matrix).applyMatrix4(this.matrix);
-    },
 
-    // decoration positions
-    addDec: function (t) {
-        this.decs.push(t);
-    },
-
-    clearDec: function () {
-        this.decs = [];
-    },
-
-    removeDec: function (t) {
-        this.decs.splice(this.decs.indexOf(t),1);
-    },
-
-    showDecPositions: function () {
-        this.decContainer.children = [];
-        for (p of this.decs) {
-            let pos = this.curve.getPointAt(p);
-            let mesh = new THREE.Mesh(new THREE.OctahedronBufferGeometry*0.2,new THREE.MeshBasicMaterial({color: 0x00ffff}));
-            mesh.position.copy(pos);
-            this.decContainer.add(mesh)
-        }
-    },
-
-    // Inner transform
-    setInnerScale: function (sx,sy,sz) {
+    // Morphing operations
+    setMorphScale: function (sx,sy,sz) {
         this.endContainer.scale.set(sx,sy,sz);
         this.end.scale.set(1/sx,1/sy,1/sz);
         this.point1Container.scale.set(sx,sy,sz);
@@ -344,7 +342,7 @@ Rib.prototype = Object.assign(Object.create(THREE.Object3D.prototype), {
         this.point1Container.updateMatrix();
         this.point2Container.updateMatrix();
     },
-    resetInnerScale: function () {
+    resetMorphScale: function () {
         this.endContainer.scale.set(1,1,1);
         this.end.scale.set(1,1,1);
         this.point1Container.scale.set(1,1,1);
@@ -355,14 +353,14 @@ Rib.prototype = Object.assign(Object.create(THREE.Object3D.prototype), {
         this.point1Container.updateMatrix();
         this.point2Container.updateMatrix();
     },
-    resetInnerBias: function () {
+    resetMorphTranslation: function () {
         this.end.position.copy(this.endPosition);
         this.p1.position.copy(this.p1Position);
         this.p2.position.copy(this.p2Position);
     },
-    setInnerBias: function (bx,by,bz) {
+    setMorphTranslation: function (bx,by,bz) {
         // reset positions
-        this.resetInnerBias();
+        this.resetMorphTranslation();
         // translate based on distance ratio
         let v0 = rib.end.position.distanceTo(new THREE.Vector3());
         let v1 = rib.p1.position.distanceTo(new THREE.Vector3())/v0;
@@ -379,8 +377,39 @@ Rib.prototype = Object.assign(Object.create(THREE.Object3D.prototype), {
         this.end.updateMatrix();
         this.p1.updateMatrix();
         this.p2.updateMatrix();
-        this.biased = true;
+        this.translated = true;
     },
+
+
+    // Accessory landmark operations
+    // TODO
+    getTNB: function(t) {
+        let tangent = this.curve.getTangent(t);
+        return tangent.applyMatrix4(this.endContainer.matrix).applyMatrix4(this.matrix);
+    },
+
+    addMark: function (t) {
+        this.marks.push(t);
+    },
+
+    clearMark: function () {
+        this.marks = [];
+    },
+
+    removeMark: function (t) {
+        this.marks.splice(this.marks.indexOf(t),1);
+    },
+
+    showMarks: function () {
+        this.markContainer.children = [];
+        for (p of this.marks) {
+            let pos = this.curve.getPointAt(p);
+            let mesh = new THREE.Mesh(new THREE.OctahedronBufferGeometry*0.2,new THREE.MeshBasicMaterial({color: 0x00ffff}));
+            mesh.position.copy(pos);
+            this.markContainer.add(mesh)
+        }
+    },
+
 
     toJSON: function () {
         return {

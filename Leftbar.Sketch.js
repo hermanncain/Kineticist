@@ -50,7 +50,7 @@ Leftbar.Sketch = function (sculptor) {
         sculptor.addSketch(sin);
     });
     container.add(sinButton);
-    container.add(new UI.HorizontalRule());
+    // container.add(new UI.HorizontalRule());
 
     // 3. referenced curves
     // parametric, referenced, unclosed
@@ -79,55 +79,79 @@ Leftbar.Sketch = function (sculptor) {
     container.add(importCurveButton);
     container.add(new UI.HorizontalRule());
 
-    // curve operations
-    var biasButton = new UI.Button().setId('bias').onClick(function(){
-        selectButton(biasButton.dom.id);
-    });
-    container.add(biasButton);
-    var sampleButton = new UI.Button().setId('sample').onClick(function(){
-        selectButton(sampleButton.dom.id);
-    });
-    container.add(sampleButton);
-    var cutButton = new UI.Button().setId('cut').onClick(function(){
-        selectButton(cutButton.dom.id);
-    });
-    container.add(cutButton);
-    var projectButton = new UI.Button().setId('projection').onClick(function(){
-        selectButton(projectButton.dom.id);
-    });
-    container.add(projectButton);
-    container.add(new UI.HorizontalRule());
-    container.add(new UI.HorizontalRule());
+    buttons.push(...[lineButton, splineButton, brush2DButton, brush3DButton]);
 
-    //
-    buttons.push(...[lineButton, splineButton, brush2DButton, brush3DButton, 
-        cutButton, projectButton]);
+    // curve operations
+    // var biasButton = new UI.Button().setId('bias').onClick(function(){
+    //     selectButton(biasButton.dom.id);
+    // });
+    // container.add(biasButton);
+    // var sampleButton = new UI.Button().setId('sample').onClick(function(){
+    //     selectButton(sampleButton.dom.id);
+    // });
+    // container.add(sampleButton);
+    // var cutButton = new UI.Button().setId('cut').onClick(function(){
+    //     selectButton(cutButton.dom.id);
+    // });
+    // container.add(cutButton);
+    // var projectButton = new UI.Button().setId('projection').onClick(function(){
+    //     selectButton(projectButton.dom.id);
+    // });
+    // container.add(projectButton);
+    // container.add(new UI.HorizontalRule());
+    // container.add(new UI.HorizontalRule());
+
+    // buttons.push(...[cutButton, projectButton]);
 
     // surface
     // container.add(new UI.Text('surface'));
         
     // build surface
-    var extrudeButton = new UI.Button().setId('extrude').onClick(function(){
-        selectButton(extrudeButton.dom.id);
-    });
-    container.add(extrudeButton);
-    var revolveButton = new UI.Button().setId('revolve').onClick(function(){
-        selectButton(revolveButton.dom.id);
-    });
-    container.add(revolveButton);
-    var expandButton = new UI.Button().setId('expand').onClick(function(){
-        selectButton(expandButton.dom.id);
-    });
-    container.add(expandButton);
-    var autoButton = new UI.Button().setId('auto').onClick(function(){
-        selectButton(autoButton.dom.id);
-    });
-    container.add(autoButton);
-    // container.add(new UI.Text('generate surface'));
-    var generateRow = new UI.Row();
-    container.add(generateRow);
+    // var extrudeButton = new UI.Button().setId('extrude').onClick(function(){
+    //     selectButton(extrudeButton.dom.id);
+    // });
+    // container.add(extrudeButton);
+    // var revolveButton = new UI.Button().setId('revolve').onClick(function(){
+    //     selectButton(revolveButton.dom.id);
+    // });
+    // container.add(revolveButton);
+    // var expandButton = new UI.Button().setId('expand').onClick(function(){
+    //     selectButton(expandButton.dom.id);
+    // });
+    // container.add(expandButton);
+    // var autoButton = new UI.Button().setId('auto').onClick(function(){
+    //     selectButton(autoButton.dom.id);
+    // });
+    // container.add(autoButton);
+    // var generateRow = new UI.Row();
+    // container.add(generateRow);
 
-    buttons.push(...[autoButton,revolveButton,extrudeButton,expandButton]);
+    // buttons.push(...[autoButton,revolveButton,extrudeButton,expandButton]);
+
+    // set time order for sketches
+    container.add(new UI.Text('time order'));
+    for (let i=1;i<5;i++) {
+        var setTi = new UI.Button(i).setBackgroundColor('#'+timeOrderColors[i].toString(16)).onClick(function(){
+            for (let sketch of sculptor.sketches) {
+                if (sketch.timeOrder == 0) {
+                    sketch.setTimeOrder(i);
+                }
+            }
+        });
+        container.add(setTi);
+    }
+
+    // solve skeletons
+    var solveSkeletons = new UI.Button('solve').onClick(function(){
+        sculptor.solveSkeletons();
+    });
+    container.add(solveSkeletons);
+
+    // test axis gen
+    var testAxisGen = new UI.Button('AG').onClick(function(){
+        sculptor.testAxisGen();
+    });
+    container.add(testAxisGen);
 
     function selectButton (mode) {
         signals.drawModeChanged.dispatch(mode);

@@ -229,7 +229,7 @@
 				"0"
 			]
 		},
-		"innerTransform": {
+		"morphTrans": {
 			"bias": [
 				0,
 				0,

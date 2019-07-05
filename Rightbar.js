@@ -65,7 +65,11 @@ var Rightbar = function ( sculptor ) {
             select('scene');
         } else {
             if (sculptor.currentScene.name == 'layoutScene') {
-                select('mechanism');
+                if (obj instanceof Unit) {
+                    select('geometry');
+                } else {
+                    select('mechanism');
+                }
             } else {
                 select('geometry');
             }

@@ -1,47 +1,49 @@
 /**
- * @class KineticSculptureBranch
+ * @class KineticSculpture
  * @author hermanncain / https://hermanncain.github.io/
  */
 
-function KineticSculptureBranch (axis=null, contours=[], envelopes=[], references=[]) {
+function KineticSculpture (axis=null, sketches=[]) {
 
     THREE.Object3D.call(this);
 
+    // input
+    this.axis = axis;
+    this.sketches = sketches;
+
+    // units
     this.unit = null;
-    // Unit clones
     this.units = new THREE.Group();
     this.add(this.units);
 
-    // sculpture skeletons
-    //  axis
-    this.axis = axis;
-    //  reference curve
-    this.references = references;
+    // Contours built from unit skeleton ends
+    this.contours = new THREE.Group();
+    this.add(this.contours);
 
-    // Skeleton
-    this.skeletons = [];
-
-    // Envelopes
-    this.curves = new THREE.Group();
-    this.add(this.curves);
-
-    // Mechanism
-    this.axisMech = new THREE.Group();
-    this.add(this.axisMech);
-    this.bearings = new THREE.Group();
-    this.add(this.bearings);
-
-    // mechanism axis
+    // Axis mechanism
     this.axisWidth = 0.11;
+    this.axisMech = null;
 
 }
 
-KineticSculptureBranch.prototype = Object.assign(Object.create(THREE.Object3D.prototype), {
+KineticSculpture.prototype = Object.assign(Object.create(THREE.Object3D.prototype), {
 
-    constructor: KineticSculptureBranch,
+    constructor: KineticSculpture,
 
     clear: function () {
-
+        if (this.axisMech) {
+            this.axisMech.geometry.dispose();
+            this.remove(this.axisMech);
+        }
+        for (let contour of this.contours.children) {
+            contour.dispose();
+            this.contours.remove(contour);
+        }
+        this.contours.children = [];
+        for (let unit of this.units.children) {
+            unit.dispose();
+        }
+        this.units.children = [];
     },
 
     // sculpture skeleton operations
@@ -49,188 +51,162 @@ KineticSculptureBranch.prototype = Object.assign(Object.create(THREE.Object3D.pr
         this.axis = sketch;
     },
 
-    addReference: function (obj){
-        if (this.references.indexOf(obj)<0) {
-            this.references.push(obj);
+    appendSketch: function (obj){
+        if (this.sketches.indexOf(obj)<0) {
+            this.sketches.push(obj);
         }
-        if (obj.type == 'sketch') {
+        if (obj.type == 'Sketch') {
             obj.deselect();
-            obj.setCurveType('reference');
-        }
-        
+            obj.setRole('contour');
+        }      
     },
 
-    removeReference: function (obj) {
+    removeSketch: function (obj) {
         if (obj.type == 'sketch') {
             obj.deselect();
-            obj.setCurveType('contour');
+            obj.setRole('contour');
         }
-        this.references.splice(this.references.indexOf(obj),1);
+        this.sketches.splice(this.sketches.indexOf(obj),1);
     },
 
-    clearReference: function () {
-        for (let obj of this.references) {
+    clearSketch: function () {
+        for (let obj of this.sketches) {
             if (obj.type == 'sketch') {
                 obj.deselect();
-                obj.setCurveType('contour');
+                obj.setRole('contour');
             }
         }
-        this.references = [];
+        this.sketches = [];
     },
 
-    // arrange unit clones
-    arrange: function (u,p) {
-        this.unit = u;
-        this.unit.transmissions.children = [];
-        this.axis.sample(p.g.n);
-        // unit, axis, references
-
-        // null unit or null axis
-        if (this.unit.shape.children.length==0||this.axis==null) 
-        {
-            // alert('empty unit or axis!');
-            // return;
-        }
-        
-        // clear up
-        this.units.children = [];
+    // Unit layout
+    // if there is a reference sketch, arbitrary unit orientations may emerge
+    // because if the sketch has multiple intersecting points 
+    // with axis' normal plane, it is inaccurate to get the nearest one
+    layout: function (unit,params,forcePTF=false) {
+        this.unit = unit;
+        this.clear();
         this.unit.resetTransform();
 
         // sample axis
-        this.axis.sample(p.g.n);
-        let P = this.axis.samplingPoints;
-        let T = this.axis.samplingTangents;
-
-        // set reference
-        if (this.references.length==0) {
-            this.layout(P,p);
-        } else if (this.references.length==1) {
-            this.layoutRef(P,p);
+        this.axis.sample(params.n);
+        let positions = this.axis.samplingPoints;
+        let frames = null;
+        if (this.sketches.length==0 || forcePTF==true) {
+            // no sketch, use PTF
+            frames = this.axis.ff;
+        } else {
+            // has (a) sketch(es), only use sketch[0] to build frames
+            frames = this.axis.getReferencedFrames(this.sketches[0],params.n);
         }
-    },
-
-    layout: function (positions, p) {
-        let ff = this.axis.ff;
         for (let i=0;i<positions.length;i++) {
+            if (!frames.normals[i]) continue;
             let u = this.unit.clone();
             u.idx = i;
             // align to frame
-            let m = new THREE.Matrix4().makeBasis(ff.normals[i],ff.binormals[i],ff.tangents[i]).multiplyScalar(p.g.scale).setPosition(positions[i]);
+            let m = new THREE.Matrix4().makeBasis(frames.normals[i],frames.binormals[i],frames.tangents[i]).multiplyScalar(params.scale).setPosition(positions[i]);
             u.applyMatrix(m);
             u.updatePointSize();
-            u.rotateZ(p.g.torsion/180*Math.PI*i);
+            if (this.sketches.length==0 && params.torsion!=0) {
+                u.rotateZ(params.torsion/180*Math.PI*i);
+            }
             // store rotation
             u.metaRotation = u.rotation.clone();
             this.units.add(u);
+            // important
+            u.updateMatrixWorld();
         }
+
     },
 
-    layoutRef: function (positions, p) {
-        let rf = this.axis.getReferencedFrames(this.references[0],p.g.n);
-        for (let i=0;i<positions.length;i++) {
-            if (!rf.normals[i]) continue;
-            let m = new THREE.Matrix4().makeBasis(rf.normals[i],rf.binormals[i],rf.tangents[i]).multiplyScalar(p.g.scale).setPosition(positions[i]);
-            let u = this.unit.clone();
-            u.idx = i;
-            // align
-            u.applyMatrix(m);
-            u.updatePointSize();
-            // store rotation
-            u.metaRotation = u.rotation.clone();
-            this.units.add(u);
-        }
+
+    // Morph
+
+    showTransmissionInMetaUnit: function () {
+        this.unit.joints.children = [];
+        this.unit.joints.add(this.units.children[1].joints.children[0].clone());
+        this.unit.joints.add(this.units.children[1].joints.children[1].clone());
     },
 
-    // sculpture envelope
-    buildCurves: function () {
-        this.curves.children = []
-        let n = this.unit.guides.children.length;
+
+    // Outline
+    // draw spline contours passing through unit ends
+    buildOutlines: function () {
+        for (let contour of this.contours.children) {
+            contour.dispose();
+        }
+        this.contours.children = [];
+
+        let n = this.units.children[0].skeleton.children.length;
         for (let i=0;i<n;i++) {
             let pts = [];
             for (let j=0;j<this.units.children.length;j++) {
-                let end = this.units.children[j].guides.children[i].end;
+                let end = this.units.children[j].skeleton.children[i].end;
                 pts.push(end.localToWorld(new THREE.Vector3()));
             }
-            let curve = new Sketch('spline',pts);
-            this.curves.add(curve);
+            let curve = new Sketch('spline',pts,undefined,'sketch',this.axis.closed);
+            this.contours.add(curve);
         }
     },
 
-    // skeleton
+
+    // Sketch-based generation
+
     clearSkeleton: function () {
-        // for (bone of this.skeletons) {
-        //     this.remove(bone);
-        // }
-        // this.skeletons = [];
+        for (let unit of this.units.children) {
+            unit.dispose();
+        }
         this.units.children = [];
     },
-    
-    buildSkeleton: function (dist,freq) {
-        // console.log('a')
-        // this.clearSkeleton();
-        // this.skeletons.push(...this.axis.generateSkeleton(this.references, dist, freq));
-        // for (bone of this.skeletons) {
-        //     this.add(bone);
-        // }
+
+    buildSkeleton: function (dist=Infinity,freq=20) {
+
+        this.clearSkeleton();
+        this.clear();
 
         // initialize an empty unit
-        var unit = new Unit();
-        this.unit = unit;
-        let p = {g:{},l:[]};
-        p.g.n = freq;
-        p.g.scale = 1;
-        p.g.torsion = 0;
-        for (let i=0;i<p.g.n;i++) {
-            p.l[i] = {};
+        this.unit = new Unit();
+        let params = {n:freq,scale:1,torsion:0};
+        this.axis.curveMesh.geometry.computeBoundingSphere();
+        let axisRadius = this.axis.curveMesh.geometry.boundingSphere.radius * this.axis.curveMesh.scale.z;
+        // set sleeve radius
+        this.unit.userData.sleeve.rOut = axisRadius/25;
+        this.unit.userData.sleeve.rInner = axisRadius/50;
+        this.unit.userData.sleeve.thickness = axisRadius/50;
+        if (!this.axis.closed) {
+            this.unit.userData.sleeve.rOut /= 2;
+            this.unit.userData.sleeve.rInner /= 2;
+            this.unit.userData.sleeve.thickness /= 2;
         }
-
-        // clear up
-        this.units.children = [];
-        this.unit.transmissions.children = [];
 
         // sample axis and arrange empty units
-        this.axis.sample(p.g.n);
-        this.layout(this.axis.samplingPoints,p);
+        this.axis.sample(params.n);
+        this.layout(this.unit,params,true);
         
-        // intersect to add ribs to units
-        for (let i=0;i<freq;i++) {
-            this.units.children[i].updateMatrix();
-            this.units.children[i].updateMatrixWorld();
-            let planeCenter = this.axis.samplingPoints[i];
-            let normalPlane = this.axis.samplingNormalPlanes[i];
-            let point = new THREE.Vector3();
-            var lines = [];
-            for (c of this.references) {
-                for (line of c.denseLines) {
-                    lines.push(line.clone().applyMatrix4(this.axis.matrix));
-                }
+        // get all intersections of all sketches with axis normal planes
+        let samplingEnds = this.axis.getNormalIntersectionsWithCurves(this.sketches,dist);
+        for (i=0;i<freq;i++) {
+            let ends = samplingEnds[i];
+            let unit = this.units.children[i];
+            // empty 
+            if (ends.length == 0) {
+                unit.isEmpty = true;
+                continue;
             }
-            for (line of lines) {
-                if (!normalPlane.intersectsLine(line)) {
-                    continue;
-                } else {
-                    var end = normalPlane.intersectLine(line,point);
-                    if (end.distanceTo(planeCenter)<dist) {
-                        this.units.children[i].worldToLocal(end);
-                        this.units.children[i].addRib(end);
-                    }
-                }
+            for (end of ends) {
+                let point = end.clone();
+                unit.worldToLocal(point);
+                unit.addRib(point);
             }
-            // build skeleton curve based on rib curve
-            this.units.children[i].guides.children.map(function(r){
-                r.skeleton = true;
-                r.buildCurve();
-            });
+            unit.buildSleeveRing();
+            unit.updatePointSize(0.1);
         }
+
     },
 
-    // mechanisms
 
-    // buildUtils: function () {
+    // motion control
 
-    // },
-
-    // motion simulation
     setController: function () {
 
     },
@@ -248,44 +224,102 @@ KineticSculptureBranch.prototype = Object.assign(Object.create(THREE.Object3D.pr
         // if(this.envelope.children.length>0) {
         //     this.generateEnvelope();
         // }
-        if(this.curves.children.length>0) {
-            this.buildCurves();
+        if(this.contours.children.length>0) {
+            this.buildOutlines();
         }
     },
 
     reset: function () {
-        // reset skeleton
-        // for(bone of this.skeletons){
-        //     bone.rotation.set(0,0,0);
-        // }
         // reset units
         for(unit of this.units.children) {
             unit.rotation.copy(unit.metaRotation);
             // must
             unit.updateMatrixWorld();
         }
-        // reset envelope
-        // if(this.envelope.children.length>0) {
-        //     this.generateEnvelope();
-        // }
-        if(this.curves.children.length>0) {
-            this.buildCurves();
+        // reset contours
+        if(this.contours.children.length>0) {
+            this.buildOutlines();
         }
     },
 
 
-    // Mechanisms
+    // Solve junctions
+
+    // 1. If a junction's envelope collides with the axis, it must collide with at least 
+    //    one unit, so collision checking with the axis is unnecessary
+    // 2. Even a junction's envelope collides with a unit or unit skeleton, junction's
+    //    mechanism may not collide with them. It depends on junction's phase
+
+    buildJoints: function (highlight=false) {
+        let connectivity = true;
+        // build
+        for (let i=0;i< this.units.children.length-1 ;i++) {
+            let u1 = this.units.children[i];
+            let u2 = this.units.children[i+1];
+            if (u1.isEmpty || u2.isEmpty) {
+                continue;
+            }
+
+            // remember unit's scale!
+            let d = u1.position.distanceTo(u2.position)/u1.scale.z;
+            let connect = false;
+
+            // exhaust h, theta for feasible junctions (search h first)
+            // 30 degree <= theta <= 60 degree
+            // 0.6d <= h <= 0.9d
+            // strides: theta 1 degree, h 0.015 d
+            // max iteration: 30 x 20 = 600 times per junction pair
+
+            for (let theta=Math.PI/6;theta<Math.PI/3;theta+=Math.PI/180) {
+                for (let h=0.6*d;h<0.9*d;h+=0.015*d) {
+                    u1.buildRod(theta,h);
+                    u2.buildFork(theta,h);
+                    if (u1.rod.checkConnection(u2.fork)) {
+                        // TODO: build mechanism later
+                        u1.rod.buildMechanism();
+                        u2.fork.buildMechanism();
+                        connect = true;
+                        break;
+                    }
+                }  
+                if (connect) {
+                    break;
+                }
+            }
+            // separate
+            if (!connect) {
+                u1.clearRod();
+                u2.clearFork();
+                if (highlight) {
+                    // highlight relating units and continue
+                    u1.setMaterial(highlightUnitMaterial);
+                    u2.setMaterial(highlightUnitMaterial);
+                    connectivity = false;
+                } else {
+                    // highlight is not needed, break the solving process
+                    connectivity = false;
+                    break;
+                }
+            }
+        }
+
+        return connectivity;
+    },
+
     buildAxis: function () {
-        this.axisMech.children = [];
-        let axisMesh = new THREE.Mesh(new THREE.TubeBufferGeometry(
+        if (this.axisMech) {
+            this.axisMech.geometry.dispose();
+            this.remove(this.axisMech);
+        }
+
+        this.axisMech = new THREE.Mesh(new THREE.TubeBufferGeometry(
             this.axis.curve,
-            200/* this.axis.curveResolution/2 */,
+            100/* this.axis.curveResolution/2 */,
             this.axisWidth,8,this.axis.curve.autoClose),
             this.unit.currentMaterial
         );
-        axisMesh.layers.set(4);
-        this.axisMech.add(axisMesh);
-        this.buildBearings();
+        this.axisMech.layers.set(4);
+        this.add(this.axisMech);
     },
 
     buildBearings: function () {
@@ -294,260 +328,21 @@ KineticSculptureBranch.prototype = Object.assign(Object.create(THREE.Object3D.pr
         }
     },
 
-    showTransmissionInMetaUnit: function () {
-        this.unit.joints.children = [];
-        this.unit.joints.add(this.units.children[1].joints.children[0].clone());
-        this.unit.joints.add(this.units.children[1].joints.children[1].clone());
+    getMechanisms: function () {
+        let r = [];
+        for (u of this.units.children) {
+            r.push(...u.getMechanisms());
+        }
+        return r;
     },
 
-    buildJoints: function () {
-        // console.log('Searching... please wait a second');
-        for (let i=0;i< this.units.children.length-1 ;i++) {
-            let u1 = this.units.children[i];
-            let u2 = this.units.children[i+1];
-            let info = 'failed';
-
-            let radiusTop = u1.userData.sleeve.r1;
-            // boundary
-            let unitInterval = u1.position.distanceTo(u2.position);
-            // for test
-            // let a = 30;
-            // let x = 0.75*unitInterval;
-            // let h = u1.scale.z/Math.tan(a/180*Math.PI)+x;
-            // let r = h*Math.tan(a/180*Math.PI);
-            // console.log(this.computeJointTrajectory(r/u1.scale.z,h/u1.scale.z,u1,u2))
-
-            let a = 15,x = 0.7*unitInterval;
-            for (a = 30;a<60;a++) {
-                // for (x = unitInterval/2;x<unitInterval;x+=unitInterval/100) {
-                    let h = u1.scale.z/Math.tan(a/180*Math.PI)+x;
-                    let r = h*Math.tan(a/180*Math.PI)
-                    info = this.computeJointTrajectory(radiusTop, r/u1.scale.z,h/u1.scale.z,u1,u2)
-                    if (typeof(info)!='string') {
-                        break;
-                    }
-                // }
-                if (typeof(info)!='string') {
-                    break;
-                }
-            }
-            if (typeof(info) == 'string') {
-                // console.log('Exausted search space and find no solutions, failed to generate joints. Reason: '+info);
-                return 'Failed after exhausting all possibilites. Reason: '+info;
-            }
-            u1.userData.transmissions = info;
-            u2.userData.transmissions = info;
-            u1.buildRod();
-            u2.buildFork();
-
-        }
-        return 'Got a feasible solution';
-    },
-
-    computeJointTrajectory: function (rTop, r,h,u1,u2) {
-        // for test
-        let removeCone = true;
-        // pusher/receiver cone
-        let geo = new THREE.ConeGeometry(r,h,64,1,true);
-        let pusherCone = new THREE.Mesh(geo,new THREE.MeshPhongMaterial({shininess:0,color:0x26876a,side:THREE.DoubleSide,transparent:true,opacity:0.5}));
-        let receiverCone = pusherCone.clone();
-        pusherCone.rotateX(-Math.PI/2);
-        receiverCone.rotateX(Math.PI/2);
-        dx = h*(r-2)/2/r;
-        pusherCone.translateY(-dx);
-        receiverCone.translateY(-dx);
-        u1.transmissions.add(pusherCone);
-        pusherCone.updateMatrixWorld();
-        u2.transmissions.add(receiverCone);
-        receiverCone.updateMatrixWorld();
-
-        // check cones intersection with axis segment between u1 and u2
-        let i1 = this.units.children.indexOf(u1)/this.units.children.length;
-        let i2 = this.units.children.indexOf(u2)/this.units.children.length;
-        let j1 = Math.floor(this.axis.densePoints.length*i1);
-        let j2 = Math.floor(this.axis.densePoints.length*i2);
-        for (let i=j1;i<j2-1;i++) {
-            let start = this.axis.localToWorld(this.axis.densePoints[i]);
-            let end = this.axis.localToWorld(this.axis.densePoints[i+1]);
-            let far = end.distanceTo(start);
-            let dir = new THREE.Vector3().subVectors(end,start).normalize();
-            let ray = new THREE.Raycaster(start,dir,far/r,far);
-            let istAxis = ray.intersectObjects([pusherCone,receiverCone]);
-            if (istAxis.length>=1) {
-                // console.log('intersect with axis',istAxis.length);
-                if (removeCone) {
-                    u1.transmissions.remove(pusherCone);
-                    u2.transmissions.remove(receiverCone);
-                }
-                return 'intersect with axis';
-            }
-        }
-        // check intersection between cones
-        // ray
-        let far = Math.sqrt(r**2+h**2);
-        let near = far/r;
-        // pusher's cone top
-        let originWorld = pusherCone.localToWorld(pusherCone.geometry.vertices[0].clone());
-        let originLocal = u1.worldToLocal(originWorld.clone());
-        // receiver's cone top
-        let rOriginWorld = receiverCone.localToWorld(receiverCone.geometry.vertices[0].clone());
-        let rOriginLocal = u2.worldToLocal(rOriginWorld.clone());
-        let ends = [], dirs = [];
-        let points = [];
-        let pmin=1000,rmin=1000,pmax=0,rmax=0,point = new THREE.Vector3(), maxAngle=0;
-        for (let j=1;j<pusherCone.geometry.vertices.length;j++) {
-            // for drawing ray helpers
-            let endWorld = pusherCone.localToWorld(pusherCone.geometry.vertices[j].clone());
-            let endLocal = u1.worldToLocal(endWorld.clone());
-            ends.push(endLocal);
-            let dirWorld = new THREE.Vector3().subVectors(endWorld,originWorld).normalize();
-            let dirLocal = new THREE.Vector3().subVectors(endLocal,originLocal).normalize();
-            dirs.push(dirLocal);
-
-            // get intersecting line with another cone
-            let ray1 = new THREE.Raycaster(originWorld,dirWorld,0,far*0.95);
-            // let helper = new THREE.ArrowHelper(dirLocal,originLocal,(far*0.9),0xff0000);
-            // u1.add(helper);
-            let istCone = ray1.intersectObject(receiverCone);
-            if (istCone.length==0) {
-                // console.log('no intersections with cone');
-                if (removeCone) {
-                    u1.transmissions.remove(pusherCone);
-                    u2.transmissions.remove(receiverCone);
-                }
-                return 'no intersections with cone';
-            } else if (istCone.length>1){
-                // some times the ray intersects with the same point twice
-                let ist1 = istCone[0];
-                let ist2 = istCone[1];
-                if (ist1.distance != ist2.distance ) {
-                    // console.log('multiple intersections with cone',istCone);
-                    if (removeCone) {
-                        u1.transmissions.remove(pusherCone);
-                        u2.transmissions.remove(receiverCone);
-                    }
-                    return 'multiple intersections with cone';
-                }
-            // no intersections with axis, single intersection with another cone
-            } else {
-                // if (j==1) {
-                //     point.copy(istCone[0].point);
-                // }
-
-                let pt = istCone[0].point;
-                // check joint angle
-                // on the min intersecting point of cones, the angle of joints will be max
-                // max angle cannot be bigger than a value
-                // otherwise joints will be hard to connect and move in rotation
-                let angle = pt.clone().sub(originWorld).angleTo(pt.clone().sub(rOriginWorld));
-                maxAngle = maxAngle>angle?maxAngle:angle;
-                if (maxAngle>160/180*Math.PI) {
-                    // console.log('bad angle');
-                    if (removeCone) {
-                        u1.transmissions.remove(pusherCone);
-                        u2.transmissions.remove(receiverCone);
-                    }
-                    return 'bad angle';
-                }
-
-                // check intersection with unit
-                let ray2 = new THREE.Raycaster(originWorld,dirWorld,0,far*1.05);
-                // let uhelper = new THREE.ArrowHelper(dirLocal,originLocal,far*1.1,0xff0000);
-                // u1.add(uhelper);
-
-                let istUnit = ray2.intersectObject(u2.children[3].children[0]);
-                if (istUnit.length>0) {
-                    // console.log('intersect with unit');
-                    if (removeCone) {
-                        u1.transmissions.remove(pusherCone);
-                        u2.transmissions.remove(receiverCone);
-                    }
-                    points.push('iu');
-                    // return 'intersect with unit';
-                    continue;
-                }
-
-                points.push(pt);
-            }
-        }
-
-        // review points to get the safest joint point
-        let indices = [];
-        for (istpt of points) {
-            if (istpt != 'iu') {
-                indices.push(points.indexOf(istpt));
-            }
-        }
-        if (indices.length==0) {
-            return 'intersect with unit';
-        }
-
-        // pusherCone.visible = false;
-        // receiverCone.visible = false;
-
-        indices.push(-1);
-        let startIndex=indices[0],length=1,tempStartIndex=indices[0],tempLength=1;
-        for (let k=1;k<indices.length;k++) {
-            if (indices[k]-indices[k-1]==1) {
-                tempLength++;
-            } else {
-                if (tempStartIndex==startIndex) {
-                    length = tempLength;
-                } else {
-                    if (tempLength>length) {
-                        startIndex = tempStartIndex;
-                        length = tempLength;
-                    }
-                }
-                tempStartIndex = indices[k];
-                tempLength=1;
-            }
-        }
-        
-        // data
-        let idx = startIndex + Math.floor(length/2);
-        let jointPoint = points[idx];
-        let pusherLength = jointPoint.distanceTo(originWorld)/u1.scale.z-far/r;
-        pmax = pusherLength>pmax?pusherLength:pmax;
-        pmin = pusherLength<pmin?pusherLength:pmin;
-        let receiverLength = jointPoint.distanceTo(rOriginWorld)/u1.scale.z-far/r;
-        rmax = receiverLength>rmax?receiverLength:rmax;
-        rmin = receiverLength<rmin?receiverLength:rmin;
-
-        if (removeCone) {
-            u1.transmissions.remove(pusherCone);
-            u2.transmissions.remove(receiverCone);
-        }
-
-        let pDirLocal = u1.worldToLocal(jointPoint.clone()).sub(originLocal).normalize();
-        let pStart = originLocal.clone().add(pDirLocal.clone().multiplyScalar(far/r));
-        let rDirLocal = u2.worldToLocal(jointPoint.clone()).sub(rOriginLocal).normalize();
-        let rStart = rOriginLocal.clone().add(rDirLocal.clone().multiplyScalar(far/r));
-        
-        let params = {
-            // cone parameters
-            r:r,h:h,
-            // rod
-            pstart:pStart.toArray(),pdir:pDirLocal.toArray(),
-            rodLength:pmax*1.1,
-            // fork
-            rstart:rStart.toArray(),rdir:rDirLocal.toArray(),
-            forkLength:rmax*1.1,
-            forkMinLength:Math.min(0.4*rmax,rmin*0.8),
-            pusherStartWorld: originWorld.toArray(),
-            receiverStartWorld: rOriginWorld.toArray(),
-            point: jointPoint.toArray(),
-        };
-        return params;
-    },
-
-    // data exchange
+    // export/import
     toJSON: function () {
         return {
             type: 'Sculpture',
             unit: this.unit.toJSON(),
             axis: this.axis.toJSON(),
-            references: this.references.map(function(c){return c.toJSON();}),
+            sketches: this.sketches.map(function(c){return c.toJSON();}),
             units:this.units.children.map(function(u){return u.toJSON();}),
             axisWidth: this.axisWidth,
             params:this.params,
@@ -558,7 +353,7 @@ KineticSculptureBranch.prototype = Object.assign(Object.create(THREE.Object3D.pr
         let scope = this;
         this.unit = new Unit().fromJSON(data.unit);
         this.axis = new Sketch().fromJSON(data.axis);
-        this.references = data.references.map(function(c){return new Sketch().fromJSON(c)});
+        this.sketches = data.sketches.map(function(c){return new Sketch().fromJSON(c)});
         data.units.map(function(u){
             var u = new Unit().fromJSON(u);
             u.setMaterial(scope.unit.currentMaterial);
@@ -570,17 +365,14 @@ KineticSculptureBranch.prototype = Object.assign(Object.create(THREE.Object3D.pr
         return this;
     },
 
-    toSTL: function () {
-
-    }
 });
 
 // layout2D: function (positions, directions,p) {
 
-//     let t = p.g.torsion;
-//     let b = p.g.bias;
-//     let rr = p.g.RadicalRotation;
-//     let rt = p.g.RadicalTorsion;
+//     let t = p.torsion;
+//     let b = p.bias;
+//     let rr = p.RadicalRotation;
+//     let rt = p.RadicalTorsion;
 
 //     // get the basis plane of the curve
 //     let planeNormal = new THREE.Vector3().crossVectors(directions[0],directions[1]);
@@ -603,7 +395,7 @@ KineticSculptureBranch.prototype = Object.assign(Object.create(THREE.Object3D.pr
 //             u.bias(b.axis,b.distance);
 //         }
 //         // radical scale
-//         u.scaleRadius(p.g.size);
+//         u.scaleRadius(p.size);
 
 //         u.generateShapes();
 
@@ -625,7 +417,7 @@ KineticSculptureBranch.prototype = Object.assign(Object.create(THREE.Object3D.pr
 //         // torsion
 //         u.rotateZ(i*t/180*Math.PI);
 //         // scale
-//         u.scale.set(p.g.scale,p.g.scale,p.g.scale);
+//         u.scale.set(p.scale,p.scale,p.scale);
 
 //         // radical torsion
 //         if (rt.world) {
@@ -729,16 +521,16 @@ KineticSculptureBranch.prototype = Object.assign(Object.create(THREE.Object3D.pr
     //     let geo = new THREE.BufferGeometry();
     //     let vertices = [];
     //     let n = this.units.children.length;
-    //     let m = this.units.children[0].guides.children.length;
+    //     let m = this.units.children[0].skeleton.children.length;
     //     console.log(n,m)
     //     if (this.axis.curve.closed) {
     //         for (let i=0;i<n;i++) {
     //             let u1 = this.units.children[i];
     //             let u2 = this.units.children[(i+1)%n];
     //             for (let j=0;j<m;j++) {
-    //                 let p1 = u1.localToWorld(u1.guides.children[j].getEndPosition().clone());
-    //                 let p2 = u2.localToWorld(u2.guides.children[j].getEndPosition().clone());
-    //                 let p3 = u1.localToWorld(u1.guides.children[(j+1)%m].getEndPosition().clone());
+    //                 let p1 = u1.localToWorld(u1.skeleton.children[j].getEndPosition().clone());
+    //                 let p2 = u2.localToWorld(u2.skeleton.children[j].getEndPosition().clone());
+    //                 let p3 = u1.localToWorld(u1.skeleton.children[(j+1)%m].getEndPosition().clone());
     //                 vertices.push(p1.x);
     //                 vertices.push(p1.y);
     //                 vertices.push(p1.z);
@@ -757,9 +549,9 @@ KineticSculptureBranch.prototype = Object.assign(Object.create(THREE.Object3D.pr
     //             if (i==n-1) {
     //                 u2 = this.units.children[i-1];
     //                 for (let j=m;j>0;j--) {
-    //                     let p1 = u1.localToWorld(u1.guides.children[j%m].getEndPosition().clone());
-    //                     let p2 = u2.localToWorld(u2.guides.children[j%m].getEndPosition().clone());
-    //                     let p3 = u1.localToWorld(u1.guides.children[j-1].getEndPosition().clone());
+    //                     let p1 = u1.localToWorld(u1.skeleton.children[j%m].getEndPosition().clone());
+    //                     let p2 = u2.localToWorld(u2.skeleton.children[j%m].getEndPosition().clone());
+    //                     let p3 = u1.localToWorld(u1.skeleton.children[j-1].getEndPosition().clone());
     //                     vertices.push(p1.x);
     //                     vertices.push(p1.y);
     //                     vertices.push(p1.z);
@@ -773,9 +565,9 @@ KineticSculptureBranch.prototype = Object.assign(Object.create(THREE.Object3D.pr
     //             } else {
     //                 u2 = this.units.children[i+1];
     //                 for (let j=0;j<m;j++) {
-    //                     let p1 = u1.localToWorld(u1.guides.children[j].getEndPosition().clone());
-    //                     let p2 = u2.localToWorld(u2.guides.children[j].getEndPosition().clone());
-    //                     let p3 = u1.localToWorld(u1.guides.children[(j+1)%m].getEndPosition().clone());
+    //                     let p1 = u1.localToWorld(u1.skeleton.children[j].getEndPosition().clone());
+    //                     let p2 = u2.localToWorld(u2.skeleton.children[j].getEndPosition().clone());
+    //                     let p3 = u1.localToWorld(u1.skeleton.children[(j+1)%m].getEndPosition().clone());
     //                     vertices.push(p1.x);
     //                     vertices.push(p1.y);
     //                     vertices.push(p1.z);
@@ -821,10 +613,294 @@ KineticSculptureBranch.prototype = Object.assign(Object.create(THREE.Object3D.pr
 
     //     for (let i=0;i<n;i++) {
     //         let u = this.units.children[i];
-    //         u.guides.scale.set(sizes[i],sizes[i],1);
-    //         u.guides.rotation.z = torsions[i];
-    //         u.guides.updateMatrix();
+    //         u.skeleton.scale.set(sizes[i],sizes[i],1);
+    //         u.skeleton.rotation.z = torsions[i];
+    //         u.skeleton.updateMatrix();
     //         u.generateShape();
     //     }
         
     // },
+
+        // layout: function (params) {
+    //     let positions = this.axis.samplingPoints;
+    //     let ff = this.axis.ff;
+    //     for (let i=0;i<positions.length;i++) {
+    //         let u = this.unit.clone();
+    //         u.idx = i;
+    //         // align to frame
+    //         let m = new THREE.Matrix4().makeBasis(ff.normals[i],ff.binormals[i],ff.tangents[i]).multiplyScalar(params.scale).setPosition(positions[i]);
+    //         u.applyMatrix(m);
+    //         u.updatePointSize();
+    //         if (params) {
+    //             u.rotateZ(params.torsion/180*Math.PI*i);
+    //         }
+    //         // store rotation
+    //         u.metaRotation = u.rotation.clone();
+    //         this.units.add(u);
+    //         // important
+    //         u.updateMatrixWorld();
+    //     }
+    // },
+
+    // layoutRef: function (params) {
+    //     let positions = this.axis.samplingPoints;
+    //     // layout only with respect to the 1st sketch
+    //     let rf = this.axis.getReferencedFrames(this.sketches[0],params.n);
+    //     for (let i=0;i<positions.length;i++) {
+    //         if (!rf.normals[i]) continue;
+    //         let u = this.unit.clone();
+    //         u.idx = i;
+    //         // align
+    //         let m = new THREE.Matrix4().makeBasis(rf.normals[i],rf.binormals[i],rf.tangents[i]).multiplyScalar(params.scale).setPosition(positions[i]);
+    //         u.applyMatrix(m);
+    //         u.updatePointSize();
+    //         // store rotation
+    //         u.metaRotation = u.rotation.clone();
+    //         this.units.add(u);
+    //     }
+    // },
+
+        // computeJointTrajectory: function (rTop, r,h,u1,u2) {
+    //     // for test
+    //     let removeCone = true;
+    //     // pusher/receiver cone
+    //     let geo = new THREE.ConeGeometry(r,h,64,1,true);
+    //     let pusherCone = new THREE.Mesh(geo,new THREE.MeshPhongMaterial({shininess:0,color:0x26876a,side:THREE.DoubleSide,transparent:true,opacity:0.5}));
+    //     let receiverCone = pusherCone.clone();
+    //     pusherCone.rotateX(-Math.PI/2);
+    //     receiverCone.rotateX(Math.PI/2);
+    //     dx = h*(r-2)/2/r;
+    //     pusherCone.translateY(-dx);
+    //     receiverCone.translateY(-dx);
+    //     u1.transmissions.add(pusherCone);
+    //     pusherCone.updateMatrixWorld();
+    //     u2.transmissions.add(receiverCone);
+    //     receiverCone.updateMatrixWorld();
+
+    //     // check cones intersection with axis segment between u1 and u2
+    //     let i1 = this.units.children.indexOf(u1)/this.units.children.length;
+    //     let i2 = this.units.children.indexOf(u2)/this.units.children.length;
+    //     let j1 = Math.floor(this.axis.densePoints.length*i1);
+    //     let j2 = Math.floor(this.axis.densePoints.length*i2);
+    //     for (let i=j1;i<j2-1;i++) {
+    //         let start = this.axis.localToWorld(this.axis.densePoints[i]);
+    //         let end = this.axis.localToWorld(this.axis.densePoints[i+1]);
+    //         let far = end.distanceTo(start);
+    //         let dir = new THREE.Vector3().subVectors(end,start).normalize();
+    //         let ray = new THREE.Raycaster(start,dir,far/r,far);
+    //         let istAxis = ray.intersectObjects([pusherCone,receiverCone]);
+    //         if (istAxis.length>=1) {
+    //             // console.log('intersect with axis',istAxis.length);
+    //             if (removeCone) {
+    //                 u1.transmissions.remove(pusherCone);
+    //                 u2.transmissions.remove(receiverCone);
+    //             }
+    //             return 'intersect with axis';
+    //         }
+    //     }
+    //     // check intersection between cones
+    //     // ray
+    //     let far = Math.sqrt(r**2+h**2);
+    //     let near = far/r;
+    //     // pusher's cone top
+    //     let originWorld = pusherCone.localToWorld(pusherCone.geometry.vertices[0].clone());
+    //     let originLocal = u1.worldToLocal(originWorld.clone());
+    //     // receiver's cone top
+    //     let rOriginWorld = receiverCone.localToWorld(receiverCone.geometry.vertices[0].clone());
+    //     let rOriginLocal = u2.worldToLocal(rOriginWorld.clone());
+    //     let ends = [], dirs = [];
+    //     let points = [];
+    //     let pmin=1000,rmin=1000,pmax=0,rmax=0,point = new THREE.Vector3(), maxAngle=0;
+    //     for (let j=1;j<pusherCone.geometry.vertices.length;j++) {
+    //         // for drawing ray helpers
+    //         let endWorld = pusherCone.localToWorld(pusherCone.geometry.vertices[j].clone());
+    //         let endLocal = u1.worldToLocal(endWorld.clone());
+    //         ends.push(endLocal);
+    //         let dirWorld = new THREE.Vector3().subVectors(endWorld,originWorld).normalize();
+    //         let dirLocal = new THREE.Vector3().subVectors(endLocal,originLocal).normalize();
+    //         dirs.push(dirLocal);
+
+    //         // get intersecting line with another cone
+    //         let ray1 = new THREE.Raycaster(originWorld,dirWorld,0,far*0.95);
+    //         // let helper = new THREE.ArrowHelper(dirLocal,originLocal,(far*0.9),0xff0000);
+    //         // u1.add(helper);
+    //         let istCone = ray1.intersectObject(receiverCone);
+    //         if (istCone.length==0) {
+    //             // console.log('no intersections with cone');
+    //             if (removeCone) {
+    //                 u1.transmissions.remove(pusherCone);
+    //                 u2.transmissions.remove(receiverCone);
+    //             }
+    //             return 'no intersections with cone';
+    //         } else if (istCone.length>1){
+    //             // some times the ray intersects with the same point twice
+    //             let ist1 = istCone[0];
+    //             let ist2 = istCone[1];
+    //             if (ist1.distance != ist2.distance ) {
+    //                 // console.log('multiple intersections with cone',istCone);
+    //                 if (removeCone) {
+    //                     u1.transmissions.remove(pusherCone);
+    //                     u2.transmissions.remove(receiverCone);
+    //                 }
+    //                 return 'multiple intersections with cone';
+    //             }
+    //         // no intersections with axis, single intersection with another cone
+    //         } else {
+    //             // if (j==1) {
+    //             //     point.copy(istCone[0].point);
+    //             // }
+
+    //             let pt = istCone[0].point;
+    //             // check joint angle
+    //             // on the min intersecting point of cones, the angle of joints will be max
+    //             // max angle cannot be bigger than a value
+    //             // otherwise joints will be hard to connect and move in rotation
+    //             let angle = pt.clone().sub(originWorld).angleTo(pt.clone().sub(rOriginWorld));
+    //             maxAngle = maxAngle>angle?maxAngle:angle;
+    //             if (maxAngle>160/180*Math.PI) {
+    //                 // console.log('bad angle');
+    //                 if (removeCone) {
+    //                     u1.transmissions.remove(pusherCone);
+    //                     u2.transmissions.remove(receiverCone);
+    //                 }
+    //                 return 'bad angle';
+    //             }
+
+    //             // check intersection with unit
+    //             let ray2 = new THREE.Raycaster(originWorld,dirWorld,0,far*1.05);
+    //             // let uhelper = new THREE.ArrowHelper(dirLocal,originLocal,far*1.1,0xff0000);
+    //             // u1.add(uhelper);
+
+    //             let istUnit = ray2.intersectObject(u2.children[3].children[0]);
+    //             if (istUnit.length>0) {
+    //                 // console.log('intersect with unit');
+    //                 if (removeCone) {
+    //                     u1.transmissions.remove(pusherCone);
+    //                     u2.transmissions.remove(receiverCone);
+    //                 }
+    //                 points.push('iu');
+    //                 // return 'intersect with unit';
+    //                 continue;
+    //             }
+
+    //             points.push(pt);
+    //         }
+    //     }
+
+    //     // review points to get the safest joint point
+    //     let indices = [];
+    //     for (istpt of points) {
+    //         if (istpt != 'iu') {
+    //             indices.push(points.indexOf(istpt));
+    //         }
+    //     }
+    //     if (indices.length==0) {
+    //         return 'intersect with unit';
+    //     }
+
+    //     // pusherCone.visible = false;
+    //     // receiverCone.visible = false;
+
+    //     indices.push(-1);
+    //     let startIndex=indices[0],length=1,tempStartIndex=indices[0],tempLength=1;
+    //     for (let k=1;k<indices.length;k++) {
+    //         if (indices[k]-indices[k-1]==1) {
+    //             tempLength++;
+    //         } else {
+    //             if (tempStartIndex==startIndex) {
+    //                 length = tempLength;
+    //             } else {
+    //                 if (tempLength>length) {
+    //                     startIndex = tempStartIndex;
+    //                     length = tempLength;
+    //                 }
+    //             }
+    //             tempStartIndex = indices[k];
+    //             tempLength=1;
+    //         }
+    //     }
+        
+    //     // data
+    //     let idx = startIndex + Math.floor(length/2);
+    //     let jointPoint = points[idx];
+    //     let pusherLength = jointPoint.distanceTo(originWorld)/u1.scale.z-far/r;
+    //     pmax = pusherLength>pmax?pusherLength:pmax;
+    //     pmin = pusherLength<pmin?pusherLength:pmin;
+    //     let receiverLength = jointPoint.distanceTo(rOriginWorld)/u1.scale.z-far/r;
+    //     rmax = receiverLength>rmax?receiverLength:rmax;
+    //     rmin = receiverLength<rmin?receiverLength:rmin;
+
+    //     if (removeCone) {
+    //         u1.transmissions.remove(pusherCone);
+    //         u2.transmissions.remove(receiverCone);
+    //     }
+
+    //     let pDirLocal = u1.worldToLocal(jointPoint.clone()).sub(originLocal).normalize();
+    //     let pStart = originLocal.clone().add(pDirLocal.clone().multiplyScalar(far/r));
+    //     let rDirLocal = u2.worldToLocal(jointPoint.clone()).sub(rOriginLocal).normalize();
+    //     let rStart = rOriginLocal.clone().add(rDirLocal.clone().multiplyScalar(far/r));
+        
+    //     let params = {
+    //         // cone parameters
+    //         r:r,h:h,
+    //         // rod
+    //         pstart:pStart.toArray(),pdir:pDirLocal.toArray(),
+    //         rodLength:pmax*1.1,
+    //         // fork
+    //         rstart:rStart.toArray(),rdir:rDirLocal.toArray(),
+    //         forkLength:rmax*1.1,
+    //         forkMinLength:Math.min(0.4*rmax,rmin*0.8),
+    //         pusherStartWorld: originWorld.toArray(),
+    //         receiverStartWorld: rOriginWorld.toArray(),
+    //         point: jointPoint.toArray(),
+    //     };
+    //     return params;
+    // },
+
+
+    // Build mechanisms
+
+
+
+
+            // console.log('Searching... please wait a second');
+        // for (let i=0;i< this.units.children.length-1 ;i++) {
+        //     let u1 = this.units.children[i];
+        //     let u2 = this.units.children[i+1];
+        //     let info = 'failed';
+
+        //     let radiusTop = u1.userData.sleeve.r1;
+        //     // boundary
+        //     let unitInterval = u1.position.distanceTo(u2.position);
+        //     // for test
+        //     // let a = 30;
+        //     // let x = 0.75*unitInterval;
+        //     // let h = u1.scale.z/Math.tan(a/180*Math.PI)+x;
+        //     // let r = h*Math.tan(a/180*Math.PI);
+        //     // console.log(this.computeJointTrajectory(r/u1.scale.z,h/u1.scale.z,u1,u2))
+
+        //     let a = 15,x = 0.7*unitInterval;
+        //     for (a = 30;a<60;a++) {
+        //         // for (x = unitInterval/2;x<unitInterval;x+=unitInterval/100) {
+        //             let h = u1.scale.z/Math.tan(a/180*Math.PI)+x;
+        //             let r = h*Math.tan(a/180*Math.PI)
+        //             info = this.computeJointTrajectory(radiusTop, r/u1.scale.z,h/u1.scale.z,u1,u2)
+        //             if (typeof(info)!='string') {
+        //                 break;
+        //             }
+        //         // }
+        //         if (typeof(info)!='string') {
+        //             break;
+        //         }
+        //     }
+        //     if (typeof(info) == 'string') {
+        //         // console.log('Exausted search space and find no solutions, failed to generate joints. Reason: '+info);
+        //         return 'Failed after exhausting all possibilites. Reason: '+info;
+        //     }
+        //     u1.userData.transmissions = info;
+        //     u2.userData.transmissions = info;
+        //     u1.buildRod();
+        //     u2.buildFork();
+
+        // }
+        // return 'Got a feasible solution';

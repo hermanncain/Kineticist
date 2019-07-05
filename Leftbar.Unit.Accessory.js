@@ -5,7 +5,7 @@ Leftbar.Unit.Accessory = function (sculptor) {
     var container = new UI.Panel().setId('leftbar-unit-accessory');
     container.setDisplay('none');
 
-    container.add(new UI.Text('Accessories'));
+    // container.add(new UI.Text('Accessories'));
 
     var lastDecIdx = 0;
     var decsUI = [];

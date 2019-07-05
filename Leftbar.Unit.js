@@ -28,6 +28,7 @@ Leftbar.Unit = function (sculptor) {
 
     container.add(new UI.HorizontalRule());
 
+    container.add(new UI.Text('Unit blades').setWidth('180px'));
     // tabs
     var semanticTab = new UI.Button().setId('semantic-tab').onClick(function(){
         select('semantic');
@@ -91,57 +92,18 @@ Leftbar.Unit = function (sculptor) {
 
     var genBtn = new UI.Button().setId('gen').onClick(function(){
         sculptor.unit.generateShape();
-        importBtn.dom.classList.remove('selected');
+        // importBtn.dom.classList.remove('selected');
         // uploadUnit.style.display = 'none';
-        uploadRow.setDisplay('none');
+        // uploadRow.setDisplay('none');
     });
     genRow.add(genBtn);
-    var importBtn = new UI.Button().setId('import-unit').onClick(function(){
-        importBtn.dom.classList.add('selected');
-        // uploadUnit.style.display = '';
-        uploadRow.setDisplay('');
-    });
-    genRow.add(importBtn);
     var clBtn = new UI.Button().setId('clear').onClick(function(){
         sculptor.unit.clearShapes();
-        importBtn.dom.classList.remove('selected');
+        // importBtn.dom.classList.remove('selected');
         // uploadUnit.style.display = 'none';
-        uploadRow.setDisplay('none');
+        // uploadRow.setDisplay('none');
     });
     genRow.add(clBtn);
-
-    // upload geometry
-    var uploadRow = new UI.Row();
-    uploadRow.setDisplay('none');
-    uploadRow.add(new UI.Text('Z must be the rotation axis!').setFontSize('12px'))
-    var uploadUnit = document.createElement('input');
-    uploadUnit.style.marginLeft = '5px';
-    uploadUnit.style.width = '100%';
-	uploadUnit.id = 'uploadUnit';
-	uploadUnit.multiple = false;
-	uploadUnit.type = 'file';
-	uploadUnit.accept = '.obj';
-	uploadUnit.addEventListener( 'change', function ( event ) {
-		if(uploadUnit.files.length>0) {
-            var file = uploadUnit.files[0];
-            var reader = new FileReader();
-            reader.addEventListener('load', function (event) {
-                var contents = event.target.result;
-                var object = OBJLoader.parse(contents);
-                object.traverse(function(obj){
-                    if(obj.type=='Mesh') {
-                        obj.material = sculptor.unitMaterial;
-                    }
-                });
-                sculptor.unit.clearShapes();
-                sculptor.unit.setUpload(object);
-            });
-            reader.readAsText(file);
-        }
-            
-	} );
-	uploadRow.dom.appendChild( uploadUnit );
-    genRow.add(uploadRow);
 
     function clickDraw () {
         // exit draw vp mode
@@ -174,14 +136,14 @@ Leftbar.Unit = function (sculptor) {
     function selectRound () {
         sculptor.deselectGroup();
         if (sculptor.selected instanceof Rib) {
-            for (let rib of sculptor.unit.guides.children) {
+            for (let rib of sculptor.unit.skeleton.children) {
                 rib.select();
                 sculptor.selectedGroup.push(rib);
             }
         } else if (sculptor.selected.name == 'ribpoint') {
             let container = sculptor.selected.parent;
             let idx = container.parent.children.indexOf(container)
-            for (let rib of sculptor.unit.guides.children) {
+            for (let rib of sculptor.unit.skeleton.children) {
                 let pt = rib.children[idx].children[0];
                 pt.material.color.setHex(0xffaa00);
                 sculptor.selectedGroup.push(pt);
@@ -198,7 +160,7 @@ Leftbar.Unit = function (sculptor) {
     signals.objectSelected.add(function(object) {
         select('none');
         if (!object) {
-            if (sculptor.unit.templeRibs.children.length>0) {
+            if (sculptor.unit.templeSkeleton.children.length>0) {
                 cancelArray();
             }
         }
@@ -232,3 +194,45 @@ Leftbar.Unit = function (sculptor) {
     return container;
 
 }
+
+
+    // var importBtn = new UI.Button().setId('import-unit').onClick(function(){
+    //     importBtn.dom.classList.add('selected');
+    //     // uploadUnit.style.display = '';
+    //     uploadRow.setDisplay('');
+    // });
+    // genRow.add(importBtn);
+
+
+    // upload geometry
+    // var uploadRow = new UI.Row();
+    // uploadRow.setDisplay('none');
+    // uploadRow.add(new UI.Text('Z must be the rotation axis!').setFontSize('12px'))
+    // var uploadUnit = document.createElement('input');
+    // uploadUnit.style.marginLeft = '5px';
+    // uploadUnit.style.width = '100%';
+	// uploadUnit.id = 'uploadUnit';
+	// uploadUnit.multiple = false;
+	// uploadUnit.type = 'file';
+	// uploadUnit.accept = '.obj';
+	// uploadUnit.addEventListener( 'change', function ( event ) {
+	// 	if(uploadUnit.files.length>0) {
+    //         var file = uploadUnit.files[0];
+    //         var reader = new FileReader();
+    //         reader.addEventListener('load', function (event) {
+    //             var contents = event.target.result;
+    //             var object = OBJLoader.parse(contents);
+    //             object.traverse(function(obj){
+    //                 if(obj.type=='Mesh') {
+    //                     obj.material = sculptor.unitMaterial;
+    //                 }
+    //             });
+    //             sculptor.unit.clearShapes();
+    //             sculptor.unit.setUpload(object);
+    //         });
+    //         reader.readAsText(file);
+    //     }
+            
+	// } );
+	// uploadRow.dom.appendChild( uploadUnit );
+    // genRow.add(uploadRow);

@@ -231,7 +231,7 @@
 					"0"
 				]
 			},
-			"innerTransform": {
+			"morphTrans": {
 				"bias": [
 					0,
 					0,
@@ -601,7 +601,7 @@
 	},
 	"axis": {
 		"name": "Ellipse",
-		"curveType": "axis",
+		"role": "axis",
 		"parameters": [
 			0,
 			0,
@@ -632,7 +632,7 @@
 			1
 		]
 	},
-	"references": [],
+	"sketches": [],
 	"units": [
 		{
 			"type": "Unit",
@@ -865,7 +865,7 @@
 						"0"
 					]
 				},
-				"innerTransform": {
+				"morphTrans": {
 					"bias": [
 						0,
 						0,
@@ -1505,7 +1505,7 @@
 						"0"
 					]
 				},
-				"innerTransform": {
+				"morphTrans": {
 					"bias": [
 						0,
 						0,
@@ -2145,7 +2145,7 @@
 						"0"
 					]
 				},
-				"innerTransform": {
+				"morphTrans": {
 					"bias": [
 						0,
 						0,
@@ -2785,7 +2785,7 @@
 						"0"
 					]
 				},
-				"innerTransform": {
+				"morphTrans": {
 					"bias": [
 						0,
 						0,
@@ -3425,7 +3425,7 @@
 						"0"
 					]
 				},
-				"innerTransform": {
+				"morphTrans": {
 					"bias": [
 						0,
 						0,
@@ -4065,7 +4065,7 @@
 						"0"
 					]
 				},
-				"innerTransform": {
+				"morphTrans": {
 					"bias": [
 						0,
 						0,
@@ -4705,7 +4705,7 @@
 						"0"
 					]
 				},
-				"innerTransform": {
+				"morphTrans": {
 					"bias": [
 						0,
 						0,
@@ -5345,7 +5345,7 @@
 						"0"
 					]
 				},
-				"innerTransform": {
+				"morphTrans": {
 					"bias": [
 						0,
 						0,
@@ -5985,7 +5985,7 @@
 						"0"
 					]
 				},
-				"innerTransform": {
+				"morphTrans": {
 					"bias": [
 						0,
 						0,
@@ -6625,7 +6625,7 @@
 						"0"
 					]
 				},
-				"innerTransform": {
+				"morphTrans": {
 					"bias": [
 						0,
 						0,

@@ -7,14 +7,14 @@ Rightbar.Mechanism = function (sculptor) {
     var sketch = null;
 
     // switch sketch types
-    // var curveTypeRow = new UI.Row()
-    // container.add( curveTypeRow );
+    // var curveRoleRow = new UI.Row()
+    // container.add( curveRoleRow );
     var setAsAxisButton = new UI.Button().setId('setAxis').onClick(setAsAxis);
     container.add( setAsAxisButton );
     var setAsContourButton = new UI.Button().setId('setContour').onClick(setAsContour);
     container.add( setAsContourButton );
 
-    // add dependence between axis and contours
+    // add dependence between axis and sketches
     var appendButton = new UI.Button().setId('append').onClick(addContours);
     container.add( appendButton );
     var attachButton = new UI.Button().setId('attach').onClick(addToAxis);
@@ -54,7 +54,7 @@ Rightbar.Mechanism = function (sculptor) {
     skeletonPanel.add( generateSkeletonButton );
     // clear skeleton
     var clearSkeleton = new UI.Button().setId('clear-skeleton').onClick(function(){
-        sculptor.selectedSculpture.clearSkeleton();
+        sculptor.sculpture.clearSkeleton();
     });
     skeletonPanel.add( clearSkeleton );
 
@@ -82,6 +82,7 @@ Rightbar.Mechanism = function (sculptor) {
         sculptor.setAsAxis(sketch);
     }
     // set as contour
+    // TODO: contour or sketch?
     function setAsContour () {
         sculptor.setAsContour(sketch);
     }
@@ -97,24 +98,24 @@ Rightbar.Mechanism = function (sculptor) {
     }
 
     function detach () {
-        if (sculptor.selectedSketch.curveType == 'reference') {
+        if (sculptor.selectedSketch.role == 'contour') {
             let s = null;
             for (let axis of sculptor.axes) {
                 let sculpture = sculptor.sculptures[axis.uuid];
-                if (sculpture.references.indexOf(sculptor.selectedSketch)>=0) {
+                if (sculpture.sketches.indexOf(sculptor.selectedSketch)>=0) {
                     s = sculpture;
                 }
             }
-            s.removeReference(sculptor.selectedSketch);
+            s.removeSketch(sculptor.selectedSketch);
             sculptor.selectedSketch.select();
-        } else if (sculptor.selectedSketch.curveType == 'axis') {
-            sculptor.selectedSculpture.clearReference();
+        } else if (sculptor.selectedSketch.role == 'axis') {
+            sculptor.selectedSculpture.clearSketch();
         }
         
     }
 
     function generateSkeleton () {
-        sculptor.selectedSculpture.buildSkeleton(generationDistance.getValue(),samplingFrequency.getValue());
+        sculptor.sculpture.buildSkeleton(generationDistance.getValue(),samplingFrequency.getValue());
     }
 
     function update () {
@@ -122,14 +123,14 @@ Rightbar.Mechanism = function (sculptor) {
     }
 
     function updateUI (object) {
-        if (object.curveType == 'axis') {
+        if (object.role == 'axis') {
             setAsAxisButton.dom.classList.add('selected');
             setAsContourButton.dom.classList.remove('selected');
             appendButton.setDisplay('');
             attachButton.setDisplay('none');
             skeletonPanel.setDisplay('');
             detachButton.setDisplay('');
-        } else if (object.curveType == 'reference') {
+        } else if (object.role == 'reference') {
             setAsAxisButton.dom.classList.remove('selected');
             setAsContourButton.dom.classList.add('selected');
             appendButton.setDisplay('none');

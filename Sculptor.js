@@ -9,44 +9,10 @@ class Sculptor {
 
         var scope = this;
 
-        // 1. resource initialization        
-        // 1.1 scene backgrounds
-        var cubemapLoader = new THREE.CubeTextureLoader();
-        function loadCubeMap(name) {
-            cubemapLoader.setPath( 'cubemaps/'+name+'/' );
-            var texture = cubemapLoader.load( [ 'px.png', 'nx.png', 'py.png', 'ny.png', 'pz.png', 'nz.png' ] );
-            texture.name = name;
-            return texture;
-        }
-        var pureColor = new THREE.Color(0xffffff);
-        pureColor.name = 'none';
-        this.sceneBackgroundLib = {
-            'none': pureColor,
-            'scene1': loadCubeMap('scene1'),
-            'scene2': loadCubeMap('scene2')
-        };
-
-        // 1.2 materials
-        this.materialNames = ['standard','toon','reflective','glass','custom'];
-        this.materials = {};
-        var mats = [];
-        mats[0] = new THREE.MeshStandardMaterial({color:0x484848, emissive: 0x464646, roughness:1, metalness:0});
-        mats[1] = new THREE.MeshToonMaterial({color:0x8c8c8c, specular:0x000000,reflectivity:0, shininess:1 });
-        mats[2] = new THREE.MeshBasicMaterial();
-        mats[3] = new THREE.MeshPhongMaterial( { color: 0xffffff, refractionRatio: 0.985 } );
-        mats[4] = new THREE.MeshBasicMaterial();
-        for (let i=0;i<mats.length;i++) {
-            this.materials[this.materialNames[i]]=mats[i];
-            mats[i].name = this.materialNames[i];
-            mats[i].side = THREE.DoubleSide;
-        }
-        this.unitMaterial = mats[0];
-        this.selectedMaterial = mats[0].clone();
-        this.selectedMaterial.color.setHex(0x0099FF);
-
-        // 1.3 meta scene
+        // 1 Objects
+        // 1.1 meta scene
         this.scene = new THREE.Scene();
-        this.scene.background = this.sceneBackgroundLib['none'];
+        this.scene.background = backgrounds['none'];
         var lights = [];
         lights[ 0 ] = new THREE.AmbientLight( 0x787878 );
         lights[ 1 ] = new THREE.PointLight( 0xffffff, 1, 0 );
@@ -57,13 +23,13 @@ class Sculptor {
         lights[ 3 ].position.set( - 100, - 200, - 100 );
         lights.map(function(l){scope.scene.add(l);});
 
-        // 1.4 helper scene
+        // 1.2 helper scene
         this.sceneHelpers = new THREE.Scene();
         var axesHelper = new THREE.AxesHelper(5);
         axesHelper.layers.set(6);
         this.sceneHelpers.add(axesHelper);
 
-        // 1.5 camera
+        // 1.3 camera
         this.camera = new THREE.PerspectiveCamera( 50, 1, 0.1, 10000 );
         this.initialCameraPosition = new THREE.Vector3( 0, 0, 50);
         // control visibility of points, lines, skeletons and unit meshes
@@ -73,11 +39,11 @@ class Sculptor {
         }
         this.camera.position.set(0,0,50);
         
-        // 1.6 canvas for drawing
-        // 1.6.1 canvas for drawing unit skeletons
+        // 1.4 canvas for drawing
+        // 1.4.1 canvas for drawing unit skeletons
         this.unitCanvas = new THREE.Mesh(new THREE.PlaneBufferGeometry(200,200));
         this.unitCanvas.position.set(0,0,0);
-        // 1.6.2 canvas for drawing sketches
+        // 1.4.2 canvas for drawing sketches
         this.sketchCanvas = new THREE.Mesh(new THREE.PlaneBufferGeometry(200,200));
         this.sketchCanvas.position.set(0,0,-50)
         this.camera.add(this.sketchCanvas);
@@ -113,6 +79,9 @@ class Sculptor {
             leftbarChanged: new Signal(),
             sceneChanged: new Signal(),
 
+            // sculpture
+            sculptureChanged: new Signal(),
+
             // info
             infoChanged: new Signal(),
         };
@@ -127,7 +96,9 @@ class Sculptor {
         this.scenes.sketchScene.name = 'sketchScene';
         this.scenes.layoutScene = this.scene.clone();
         this.scenes.layoutScene.name = 'layoutScene';
-        this.currentScene = this.scenes.unitScene;
+        this.currentScene = this.scenes.sketchScene;
+        this.currentMaterial = grayMaterial;
+        this.showKeys = false;
 
         // 2.2 drawing modes
         this.drawMode = 'normal';
@@ -144,7 +115,7 @@ class Sculptor {
 
         // 2.5 singleton unit
         this.unit = new Unit();
-        this.unit.setMaterial(this.unitMaterial);
+        this.unit.setMaterial(grayMaterial);
         this.scenes.unitScene.add(this.unit);
 
         // 2.6 sketches
@@ -178,23 +149,32 @@ class Sculptor {
             } else if (this.selected.name == 'ribpoint') {
                 this.selected.material.color.setHex(0x0000ff);
             } else if (this.selected.type == 'Unit') {
-                this.selected.setMaterial(this.unitMaterial);
+                if (this.showKeys) {
+                    let isKey = false;
+                    for (let key in this.unitMorphKeys) {
+                        if (this.unitMorphKeys[key].indexOf(this.selected)>-1) {
+                            isKey = true;
+                            break;
+                        }
+                    }
+                    if (isKey) {
+                        this.selected.setMaterial(labeledMaterial);
+                    } else {
+                        this.selected.setMaterial(this.currentMaterial);
+                    }
+                } else {
+                    this.selected.setMaterial(this.currentMaterial);
+                }
             }
         }
         if (object != null) {
-            if (object.name == 'sleeve'||object.name=='blades'||object.name=='accessory'||object.name=='transmission') {
-                this.selected = object.parent.parent;
-                // console.log(this.selected)
-            } else if (object instanceof Rib && this.currentScene.name == 'layoutScene') {
-                // console.log(this.selected)
-            } else if (object.name == 'shape') {
-                this.selected = object.parent;
-            } else {
-                // console.log(object)
-                this.selected = object;
-            }
+            this.selected = object;
+            // console.log(this.selected)
             if (this.selected.type == 'Unit') {
-                this.selected.setMaterial(this.selectedMaterial);
+                // this.selected.select();
+                this.selected.setMaterial(selectedMaterial);
+            } else {
+                this.selected = object;
             }
         } else {
             this.selected = object;
@@ -252,7 +232,7 @@ class Sculptor {
     addSketch (sketch) {
         this.scenes.sketchScene.add(sketch);
         this.sketches.push(sketch);
-        // this.contours.push(sketch);
+        // this.sketches.push(sketch);
     }
 
     removeSketch (sketch) {
@@ -269,55 +249,40 @@ class Sculptor {
 
     switchScene (name) {
         for (let key in this.scenes) {
-            this.scenes[key].background = this.sceneBackgroundLib[name];
+            this.scenes[key].background = backgrounds[name];
         }
         if (name != 'none'){
-            this.updateMatMap(this.sceneBackgroundLib[name]);
+            metalMaterial.envMap = backgrounds[name];
         }
     }
 
-    setUnitMaterial(name) {
-        let scope = this;
-        this.unitMaterial = this.materials[name];
-        if (name == 'glass') {
-            if(!this.materials[name].envMap) {
-                this.updateMatMap(this.sceneBackgroundLib['scene1'])
-            }
-            this.materials[name].envMap.mapping = THREE.CubeRefractionMapping;
-        } else if (name == 'reflective') {
-            if(!this.materials[name].envMap) {
-                this.updateMatMap(this.sceneBackgroundLib['scene1'])
-            }
-            this.materials[name].envMap.mapping = 301;
+    setMaterial (mat) {
+        this.currentMaterial = mat;
+        sculptor.unit.setMaterial(mat);
+        if (this.sculpture) {
+            this.sculpture.units.children.map(function(u){
+                u.setMaterial(mat);
+            });
         }
-        this.unit.setMaterial(this.unitMaterial);
-        this.scenes.layoutScene.traverse(function(obj) {
-            if (obj.type == 'Unit') {
-                obj.setMaterial(scope.unitMaterial);
-            }
-        });
-    }
-
-    updateMatMap(map) {
-        this.materials['reflective'].envMap = map;
-        this.materials['glass'].envMap = map;
     }
 
     setAsAxis (sketch) {
-        if (sketch.curveType == 'axis') return;
-        sketch.setCurveType('axis');
+        if (sketch.role == 'axis') return;
+        sketch.setRole('axis');
         if (this.axes.indexOf(sketch)<0) {
             this.axes.push(sketch);
-            this.sculptures[sketch.uuid] = new KineticSculptureBranch(sketch);
+            this.sculptures[sketch.uuid] = new KineticSculpture(sketch);
         }
         // this.scenes.sketchScene.add(this.sculptures[sketch.uuid]);
         this.selectSculpture(sketch);
         this.signals.sketchChanged.dispatch(sketch);
     }
 
+    // TODO
+    // contour or sketch?
     setAsContour (sketch) {
-        if (sketch.curveType == 'contour') return;
-        sketch.setCurveType('contour');
+        if (sketch.role == 'contour') return;
+        sketch.setRole('contour');
         if (this.axes.indexOf(sketch)>-1) {
             this.axes.splice(this.axes.indexOf(sketch),1);
             delete this.sculptures[sketch.uuid];
@@ -325,24 +290,29 @@ class Sculptor {
         this.signals.sketchChanged.dispatch(sketch);
     }
 
-    appendReference(ref) {
-        this.selectedSculpture.addReference(ref);
-        this.signals.selectModeChanged.dispatch('normal');
-        this.select(null);
+    appendSketch(sketch) {
+        this.selectedSculpture.appendSketch(sketch);
     }
+
+    // appendReference(ref) {
+    //     this.selectedSculpture.appendSketch(ref);
+    //     // commented out for continuous selection & appending
+    //     // this.signals.selectModeChanged.dispatch('normal');
+    //     // this.select(null);
+    // }
     attachToSculpture(axis) {
         let sculpture = this.sculptures[axis.uuid];
         if (sculpture==undefined) {
             alert('please set the curve as axis first!');
         } else {
-            sculpture.addReference(this.selectedSketch);
+            sculpture.appendSketch(this.selectedSketch);
             this.signals.selectModeChanged.dispatch('normal');
             axis.deselect();
             this.select(null);
         }
     }
     layout(p) {
-        this.sculpture.arrange(this.unit,p);
+        this.sculpture.layout(this.unit,p);
         this.resetMorphKeys();
     }
 
@@ -358,6 +328,46 @@ class Sculptor {
         this.unitMorphKeys.size.push(this.sculpture.units.children[0]);
         this.unitMorphKeys.size.push(this.sculpture.units.children[this.sculpture.units.children.length-1]);
 
+    }
+
+    solveSkeletons () {
+        let STSketches = [];
+        this.sketches.map(function(c){
+            if (STSketches[c.timeOrder-1] === undefined) {
+                STSketches[c.timeOrder-1] = [c];
+            } else {
+                STSketches[c.timeOrder-1].push(c);
+            }
+        });
+        let M = STSketches[0].length;
+        for (let sketch of STSketches) {
+            if (M!=sketch.length) {
+                alert('sketches should have the same number of curves!');
+                return;
+            }
+        }
+        this.solver = new prototypeSolver(STSketches);
+        // solver.buildSkeletons();
+        // for (let sculpture of solver.sculptures) {
+        //     this.scenes.layoutScene.add(sculpture);
+        // }
+        this.solver.solve();
+        this.addSketch(this.solver.axis);
+        // this.sketches.push(this.solver.axis);
+        this.setAsAxis(this.solver.axis);
+        // this.scenes.sketchScene.add(this.solver.axis);
+        // this.scenes.layoutScene.add(this.solver.sculpture);
+        
+    }
+
+    testAxisGen () {
+        // this.scenes.sketchScene.remove(this.solver.axis);
+        this.removeSketch(this.solver.axis);
+        this.solver.generateAxis();
+        // this.sketches.push(this.solver.axis);
+        
+        this.addSketch(this.solver.axis);
+        this.setAsAxis(this.solver.axis);
     }
 
     toJSON() {
@@ -378,12 +388,12 @@ class Sculptor {
         this.clear();
 
         // restore sculptures
-        this.sculpture = new KineticSculptureBranch().fromJSON(data);
+        this.sculpture = new KineticSculpture().fromJSON(data);
         this.sculpture.units.children.map(function(u){u.setMaterial(scope.unitMaterial)});
 
         // restore the singleton unit
         this.unit = this.sculpture.unit;
-        this.unit.setMaterial(this.unitMaterial);
+        this.unit.setMaterial(grayMaterial);
         this.scenes.unitScene.add(this.unit);
 
         // restore sketches
@@ -392,7 +402,7 @@ class Sculptor {
 
         // restore sketches
         this.sketches = [axis];
-        this.sketches.push(...this.sculpture.references);
+        this.sketches.push(...this.sculpture.sketches);
         this.axes = [axis];
         
         // restore sculpture morphing controls

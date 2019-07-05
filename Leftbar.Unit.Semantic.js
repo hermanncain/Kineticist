@@ -5,7 +5,7 @@ Leftbar.Unit.Semantic = function (sculptor) {
     var container = new UI.Panel().setId('leftbar-unit-semantic');
     container.setDisplay('none');
 
-    container.add(new UI.Text('Semantics'));
+    // container.add(new UI.Text('Semantics'));
 
     // radical semantics
     container.add(new UI.Text('bias').setWidth('96px').setFontSize('16px'));

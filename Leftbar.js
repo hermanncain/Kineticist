@@ -6,7 +6,7 @@ var Leftbar = function ( sculptor ) {
 
 	signals = sculptor.signals;
 
-	var container = new UI.Panel().setId( 'leftbar' )/* .setDisplay('none') */;
+	var container = new UI.Panel().setId( 'leftbar' );
 
     var unitPanel = new Leftbar.Unit(sculptor);
     container.add(unitPanel);
@@ -18,6 +18,10 @@ var Leftbar = function ( sculptor ) {
     container.add(layoutPanel);
 
     signals.sceneChanged.add(function(name){
+        switchMode(name);
+    });
+
+    function switchMode (name) {
         switch(name) {
             case 'unitScene':
                 unitPanel.setDisplay('');
@@ -35,7 +39,10 @@ var Leftbar = function ( sculptor ) {
                 layoutPanel.setDisplay('');
             break;
         }
-    });
+    }
+
+    // initialize
+    switchMode('sketchScene');
 
     return container;
     

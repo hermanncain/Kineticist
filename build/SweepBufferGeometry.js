@@ -55,8 +55,8 @@ function SweepBufferGeometry( shapes, options ) {
         var depth = options.depth !== undefined ? options.depth : 100;
 
         // section shape twists and scales along/around the sweeping path
-        var twists = options.twists = options.twists;
-        var scales = options.scales = options.scales;
+        var twists = options.twists;
+        var scales = options.scales;
 
         // clipping
         var clipping = options.clipping?options.clipping:0;

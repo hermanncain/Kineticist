@@ -89,7 +89,7 @@ var Topbar = function ( sculptor ) {
 		console.log(sculptor.currentScene.name)
 		// save unit
 		if (sculptor.currentScene.name == 'unitScene') {
-			if (sculptor.unit.guides.children.length==0 && sculptor.unit.upload.children.length==0) {
+			if (sculptor.unit.skeleton.children.length==0 && sculptor.unit.upload.children.length==0) {
 				alert('empty unit!');
 				return;
 			} else {
@@ -259,16 +259,13 @@ var Topbar = function ( sculptor ) {
 			if (sculptor.axes.length==0 && sculptor.sketches.length==1) {
 				sculptor.setAsAxis(sculptor.sketches[0]);
 			}
-			if (sculptor.axes.length==0) {
-				alert('please set axis first!');
-				return;
-			} else if (sculptor.unit.shape.children.length==0) {
-				// alert('please generate unit first!');
-				// return;
-			} else if (sculptor.axes.length>1 && !sculptor.selectedSculpture) {
-				alert('please select an axis!');
-				return;
-			}
+		// 	if (sculptor.axes.length==0) {
+		// 		alert('please set axis first!');
+		// 		return;
+		// 	} else if (sculptor.axes.length>1 && !sculptor.selectedSculpture) {
+		// 		alert('please select an axis!');
+		// 		return;
+		// 	}
 		}
 		for (let b of buildButtons) {
             if (b.dom.id == name) {
@@ -340,7 +337,8 @@ var Topbar = function ( sculptor ) {
 		}
 	})
 
-	selectMode('unitScene');
+	// initialize
+	selectMode('sketchScene');
 
 	return container;
 

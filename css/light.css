@@ -3,6 +3,7 @@
  */
 body {
 	font-family: Helvetica, Arial, sans-serif;
+	margin: 0;
 }
 button {
 	color: #555;
@@ -475,10 +476,12 @@ select {
 	/* border-radius: 0; */
 }
 	#scene1{
-		background-image: url(../cubemaps/scene1/nz.png);
+		background-image: url(../cubemaps/scene1/nz.jpg);
+
 	}
 	#scene2{
-		background-image: url(../cubemaps/scene2/nz.png);
+		background-image: url(../cubemaps/scene2/nz.jpg);
+
 	}
 
 /* unit row */
