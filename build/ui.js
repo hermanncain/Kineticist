@@ -1058,3 +1058,257 @@ UI.Canvas.prototype.setData = function (data) {
 UI.Canvas.prototype.getData = function () {
 
 }
+
+/**
+ * Spline Controller
+ * @author hermanncain
+ */
+
+UI.SplineController = function ( xRange=1, yRange=1, hasNegative=false, y0=0, y1=0, curveType='cubic') {
+
+	UI.Element.call( this );
+
+    var scope = this;
+
+    // data
+    this.near = -1;
+	this.drawPoints = [];
+    this.xRange = xRange;
+    this.yRange = yRange;
+    this.hasNegative = hasNegative;
+	this.curveType = curveType;
+	if (hasNegative) {
+		this.controlPoints = [[0,(y0/yRange+1)/2],[1,(y1/yRange+1)/2]];
+		this.base = (y0/yRange+1)/2;
+    } else {
+		this.controlPoints = [[0,y0/yRange],[1,y0/yRange]];
+		this.base = y0/yRange;
+	}
+    
+    // canvas
+    this.canvas = document.createElement( 'canvas' );
+	this.canvas.width = 120;
+    this.canvas.height = 50;
+	this.canvas.style.cursor = 'crosshair';
+    this.canvas.style.border = '1px solid #888';
+    this.drawer = this.canvas.getContext("2d");
+    this.drawer.lineWidth = 1;
+	this.drawer.fillStyle = 'red';
+
+	// Y labels
+	var rangeRow = new UI.Row().setDisplay('inline-block').setWidth('30px').setHeight('50px').setMarginRight('5px');
+	rangeRow.dom.style.verticalAlign='top';
+	rangeRow.dom.style.textAlign='right';
+	this.maxY = new UI.Text(yRange).setDisplay('block').setFontSize('12px').setMargin('0');
+	this.minY = new UI.Text(0).setDisplay('block').setFontSize('12px').setMargin('0');
+	this.baseY = new UI.Text(y0).setDisplay('block').setFontSize('12px').setMargin('0');
+	let h1 = (this.yRange-y0)/this.yRange * this.canvas.height * 0.4;
+	let h2 = (y0-this.minY.getValue())/this.yRange * this.canvas.height * 0.4;
+	if (hasNegative) {
+		this.minY.setValue(-yRange);
+		h1 /= 2;
+		h2 = (y0-this.minY.getValue())/this.yRange * this.canvas.height * 0.2;
+	}
+	rangeRow.add(this.maxY);
+	rangeRow.add(new UI.Text('s').setColor('white').setDisplay('block').setHeight(h1+'px').setMargin('0'));
+	rangeRow.add(this.baseY);
+	rangeRow.add(new UI.Text('s').setColor('white').setDisplay('block').setHeight(h2+'px').setMargin('0'));
+	rangeRow.add(this.minY);
+
+	// dom
+	var dom = document.createElement( 'div' );
+	this.dom = dom;
+	dom.appendChild( rangeRow.dom );
+    dom.appendChild( this.canvas );
+
+	// event
+    this.down = false;
+	this.canvas.addEventListener( 'click', function ( event ) {
+        if (scope.canvas.style.cursor == 'pointer') return;
+		event.preventDefault();
+		var rect = scope.canvas.getBoundingClientRect();
+		var x = (event.clientX - rect.left) / scope.canvas.width;
+		var y = (rect.bottom - event.clientY) / scope.canvas.height;
+        scope.addControlPoint([x,y]);
+        scope.buildCurve(200);
+        scope.draw();
+    }, false );
+
+    this.canvas.oncontextmenu = function (e) {
+        e.preventDefault();
+    }
+
+    this.canvas.addEventListener( 'mousedown', function ( e ) {
+        scope.down = true;
+        if (e.button == 2) {
+            if (scope.canvas.style.cursor == 'pointer') {
+                if (scope.near) {
+                    if (scope.near != 0 && scope.near != scope.controlPoints.length-1) {
+                        scope.controlPoints.splice(scope.near,1);
+                        scope.buildCurve(200);
+                        scope.draw();
+                    }
+                }
+            }
+        }
+    },false);
+
+    this.canvas.addEventListener('mouseup',function (e) {
+        scope.down = false;
+    });
+
+    this.canvas.addEventListener( 'mousemove', function ( event ) {
+
+		var rect = scope.canvas.getBoundingClientRect();
+        // var x = event.clientX - rect.left * (scope.canvas.width / rect.width);
+		// var y = event.clientY - rect.top * (scope.canvas.height / rect.height);
+		var x = (event.clientX - rect.left) / scope.canvas.width;
+		var y = (rect.bottom - event.clientY) / scope.canvas.height;
+        let position = [x,y];
+        
+        for (pt of scope.controlPoints) {
+			let d2 = Math.sqrt((position[0]- pt[0])**2+(position[1] -pt[1])**2);
+			if (d2<0.15) {
+                scope.near = scope.controlPoints.indexOf(pt);
+                break;
+            } else {
+                scope.near = -1;
+            }
+        }
+        if (scope.near >=0) {
+            scope.canvas.style.cursor = 'pointer';
+        } else {
+            scope.canvas.style.cursor = 'crosshair';
+        }
+
+        if (scope.near>=0 && scope.down) {
+            let pt = [];
+            if (scope.near == 0 || scope.near == scope.controlPoints.length-1) {
+                pt = [scope.controlPoints[scope.near][0],y];
+            } else {
+                pt = [x,y];
+            }
+            scope.controlPoints[scope.near] = pt;
+            scope.buildCurve(200);
+            scope.draw();
+        }
+	}, false );
+
+	// custom event
+	this.drawEvent = new Event('draw');
+	
+    this.initialize();
+	return this;
+
+};
+
+UI.SplineController.prototype = Object.create( UI.Element.prototype );
+UI.SplineController.prototype.constructor = UI.SplineController;
+
+// custom event handler
+UI.SplineController.prototype.onDraw = function ( callback ) {
+
+	this.dom.addEventListener( 'draw', callback.bind( this ), false );
+
+	return this;
+
+};
+
+UI.SplineController.prototype.buildCurve = function (seg) {
+    this.drawPoints = [];
+    // genearte interpolations
+    let xs = this.controlPoints.map(function(p){return p[0]});
+    let ys = this.controlPoints.map(function(p){return p[1]});
+    switch(this.curveType) {
+        case 'linear':
+            this.curve = new THREE.LinearInterpolant(xs,ys,1);
+        break;
+        case 'cubic':
+            this.curve = new THREE.CubicInterpolant(xs,ys,1);
+        break;
+    }
+    // get dense points for drawing
+    for (let i=0;i<=seg;i++) {
+        this.drawPoints.push([i/seg,this.getY(i/seg)]);
+    }
+};
+
+UI.SplineController.prototype.getY = function (x) {
+    return this.curve.evaluate(x)[0];
+}
+
+UI.SplineController.prototype.initialize = function (  ) {
+    this.buildCurve(200);
+    this.draw();
+};
+
+UI.SplineController.prototype.addControlPoint = function ( pt ) {
+    for (let i=0;i<this.controlPoints.length-1;i++) {
+		let d = Math.sqrt((this.controlPoints[i][0]- pt[0])**2+(this.controlPoints[i][1] -pt[1])**2);
+		if (d>0.15) {
+			if (this.controlPoints[i][0]<pt[0] && this.controlPoints[i+1][0]>pt[0]) {
+				this.controlPoints.splice(i+1,0,pt);
+				break;
+			}
+		}
+    }
+};
+
+UI.SplineController.prototype.drawBaseline = function () {
+
+	this.drawer.moveTo(0,this.canvas.height-this.base*this.canvas.height);
+	this.drawer.lineTo(this.canvas.width,this.canvas.height-this.base*this.canvas.height);
+	
+    this.drawer.strokeStyle = 'gray';
+    this.drawer.stroke();
+    this.drawer.closePath();
+};
+
+UI.SplineController.prototype.drawControlPoints = function () {
+    for (let pt of this.controlPoints) {
+        this.drawer.beginPath();
+        this.drawer.arc(pt[0]*this.canvas.width,this.canvas.height-pt[1]*this.canvas.height,3,0,Math.PI*2,true);
+        this.drawer.fill();
+    }  
+};
+
+UI.SplineController.prototype.drawCurve = function () {
+    this.drawer.beginPath();
+    this.drawer.strokeStyle = 'blue';
+    for (let pt of this.drawPoints) {
+        this.drawer.lineTo(pt[0]*this.canvas.width,this.canvas.height-pt[1]*this.canvas.height);
+        this.drawer.stroke();
+    }
+    this.drawer.closePath();
+};
+
+UI.SplineController.prototype.draw = function () {
+    // clear
+    this.drawer.clearRect(0,0,this.canvas.width,this.canvas.height);
+    this.drawer.beginPath();
+
+	// draw baseline
+    this.drawBaseline();
+
+    // draw lines
+    this.drawCurve();
+
+    // draw control points
+	this.drawControlPoints();
+	
+	this.dom.dispatchEvent(this.drawEvent);
+    
+};
+
+UI.SplineController.prototype.getValues = function (seg) {
+    let r = [];
+    for (let i = 0;i<=seg;i++) {
+        let pCanvas = [i/seg,this.getY(i/seg)];
+        let pn = [pCanvas[0]*this.xRange, pCanvas[1]*this.yRange];
+        if (this.hasNegative) {
+            pn[1] = 2*pn[1]-this.yRange;
+        }
+        r.push(pn);
+    }
+    return r;
+};

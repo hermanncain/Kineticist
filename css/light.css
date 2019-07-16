@@ -4,6 +4,7 @@
 body {
 	font-family: Helvetica, Arial, sans-serif;
 	margin: 0;
+	overflow:hidden;
 }
 button {
 	color: #555;
@@ -68,7 +69,7 @@ select {
 #topbar .Button {
 	background-color:#fff !important;
 	height:50px;
-	width:70px;
+	width:60px;
 }
 #topbar button:hover {
 	filter:invert(100%);
@@ -147,6 +148,8 @@ select {
 	background-color: #fff;
 	border-left: solid 2px #333;
 	border-right: solid 2px #333;
+	overflow-x:auto;
+	overflow-y:auto;
 }
 #leftbar .Text{
 	margin: 10px;
@@ -161,7 +164,7 @@ select {
 	background-color: #ccc;
 }
 #leftbar-unit .Button {
-	margin:10px;
+	margin:5px;
 	height:40px;
 	width:40px;
 }
@@ -184,8 +187,11 @@ select {
 	#gen-vg {
 		background-image: url(icons/leftbar/separated.svg);
 	}
-	#select-all {
+	/* #select-all {
 		background-image: url(icons/leftbar/select-all.svg);
+	} */
+	#polygon {
+		background-image: url(icons/leftbar/polygon.svg);
 	}
 	#gca {
 		height:30px !important;
@@ -306,15 +312,27 @@ select {
 		background-image:url(icons/leftbar/expand.svg);
 	}
 #leftbar-sketch {
-	margin: 15px;
-	/* border: solid 2px #333; */
+	margin: 5px;
 }
 #leftbar-sketch .Button {
-	margin:10px;
-	height:50px;
-	width:50px;
+	margin:5px;
+	height:45px;
+	width:45px;
 }
-
+/* leftbar geometry */
+#leftbar-geometry {
+	margin-top:0;
+}
+#leftbar-geometry .Text{
+	font-size: 14px;
+	width:70px;
+}
+#leftbar-geometry .Integer{
+	width: 30px;
+}
+#leftbar-geometry .Number{
+	width: 30px;
+}
 #leftbar-layout .Text{
 	font-size:15px;
 	width:80px;
@@ -323,15 +341,28 @@ select {
 	width:40px;
 }
 #leftbar-layout .Number {
-	width:40px;
+	width:30px;
+	margin-left:20px;
 }
+	#layout {
+		margin:10px;
+		height:40px;
+		width:40px;
+		background-image: url(icons/leftbar/automation.svg);
+	}
+	#clear-layout {
+		margin:10px;
+		height:40px;
+		width:40px;
+		background-image: url(icons/leftbar/clear.svg);
+	}
 
 #leftbar-unit-tabs .Button{
 	background-position: center;
 	background-color: #ddd;
 	background-repeat: no-repeat;
 	background-size:80% 80%;
-	width:33%;
+	width:45px;
 	height:40px;
 	border-bottom:none;
 	border-top: solid 1px #888;
@@ -349,6 +380,8 @@ select {
 	#accessory-tab {
 		background:url(icons/leftbar/accessory.svg);
 	}
+
+
 /* rightbar */
 #rightbar {
 	position: absolute;
@@ -366,6 +399,22 @@ select {
 #rightbar .Integer{
 	width: 50px;
 }
+#rightbar button{
+	height:50px;
+	width:50px;
+	margin:5px;
+	border: solid 1px white;
+
+}
+#rightbar button:hover {
+	background-color: #bbb;
+	border: solid 1px black;
+}
+#rightbar button.selected {
+	background-color: #bbb;
+	border: solid 1px black;
+}
+
 
 /* rightbar tabs*/
 #rightbar #rightbar-tabs {
@@ -403,31 +452,14 @@ select {
 		background:url(icons/rightbar/mechanism-tab.svg);
 	}
 
-/* rightbar scene tab*/
+
+/* rightbar scene tab page */
 #rightbar-scene {
 	margin:10px;
 	margin-top:0;
 }
 #rightbar-scene .Row{
 	margin:0 !important;
-}
-#rightbar-scene .Button{
-	border: none;
-	border-radius: 0;
-}
-#rightbar-scene button:hover {
-	background-color: #bbb;
-}
-#rightbar-scene button.selected {
-	background-color: #bbb;
-}
-
-/* camera row */
-#camera-row .Button {
-	height:50px;
-	width:50px;
-	margin:5px;
-	background-size: 80% 80%;
 }
 	#point-layer {
 		background-size: 20% 20% !important;
@@ -448,86 +480,14 @@ select {
 	#helper-layer {
 		background-image:url(icons/rightbar/helper.svg);
 	}
-	#front-view {
-		background-image:url(icons/rightbar/front-view.svg);
-	}
-	#left-view {
-		background-image:url(icons/rightbar/left-view.svg);
-	}
-	#top-view {
-		background-image:url(icons/rightbar/top-view.svg);
-	}
-	#axonometric-view {
-		background-image:url(icons/rightbar/a-view.svg);
-	}
-	#focus-view {
-		background-image:url(icons/rightbar/focus-view.svg);
-	}
-	#orbit-view {
-		background-image:url(icons/rightbar/orbit-view.svg);
-	}
-
-/* scene row */
-#scene-row .Button{
-	height:50px;
-	width:50px;
-	margin:5px;
-	/* border: none; */
-	/* border-radius: 0; */
-}
 	#scene1{
 		background-image: url(../cubemaps/scene1/nz.jpg);
-
 	}
 	#scene2{
 		background-image: url(../cubemaps/scene2/nz.jpg);
-
 	}
 
-/* unit row */
-#unit-row .Button {
-	border-radius:25px;
-	height:50px;
-	width:50px;
-	margin:5px;
-	background-size: 60% 60%;
-}
-	#toon {
-		background-image: url(icons/rightbar/toon.svg);
-	}
-	#reflective {
-		background-image: url(icons/rightbar/reflective.svg);
-	}
-	#glass {
-		background-image: url(icons/rightbar/glass.svg);
-	}
-	#custom {
-		background-image: url(icons/rightbar/add.svg);
-	}
-	#up-container {
-		position:absolute;
-		margin:5px;
-	}
-	#upload-texture {
-		border-radius:24px;
-		height:48px;
-		width:48px;
-		margin:0 !important;
-	}
-
-/* rightbar geometry tab */
-#rightbar-geometry {
-	margin:10px;
-	margin-top:0;
-}
-#rightbar-geometry .Row{
-	margin-top:10px;
-}
-#rightbar-geometry .Text{
-	font-size: 14px;
-	/* margin-top:10px; */
-	/* width:100px; */
-}
+/* rightbar transform tab page */
 #rightbar-transforms .Integer{
 	width:40px;
 }
@@ -535,30 +495,19 @@ select {
 	width:40px;
 }
 
-/* rightbar mechanism tab */
+/* rightbar mechanism tab page */
 #rightbar-mechanism {
 	margin:10px;
 	margin-top:0;
 }
-#rightbar-mechanism .Button{
-	height:50px;
-	width:50px;
-	margin:5px;
-	background-size: 80% 80%;
-	border: none;
-	border-radius: 0;
-}
-#rightbar-mechanism button:hover {
-	background-color: #bbb;
-}
-#rightbar-mechanism button.selected {
-	background-color: #bbb;
-}
-	#setAxis {
+	#make-sketch {
+		background-image:url(icons/leftbar/spline.svg);
+	}
+	#make-axis {
 		background-image:url(icons/sidebar/axis.svg);
 	}
-	#setContour {
-		background-image:url(icons/sidebar/contour.svg);
+	#make-contour {
+		background-image:url(icons/leftbar/blade.svg);
 	}
 	#append {
 		background-image:url(icons/sidebar/tree.svg);
@@ -578,7 +527,13 @@ select {
 		background-image:url(icons/rightbar/skeleton.svg);
 	}
 	#clear-skeleton {
-		background-image:url(icons/leftbar/forbidden.svg);
+		background-image:url(icons/leftbar/clear.svg);
+	}
+	#outline {
+		background-image:url(icons/leftbar/blade.svg);
+	}
+	#clear-outline {
+		background-image:url(icons/leftbar/clear.svg);
 	}
 
 #bottombar {

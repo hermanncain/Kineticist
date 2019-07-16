@@ -32,11 +32,13 @@ Leftbar.Layout = function (sculptor) {
     var gTorsion = new UI.Number( 0 ).setPrecision( 2 ).setRange( 0.01, 100 );
     gTorsionRow.add(gTorsion);
 
-    //button
-    var genLayout = new UI.Button('layout').onClick(generateLayout);
-    container.add(genLayout);
-    var genEnv = new UI.Button('contours').onClick(genEnvelope);
-    container.add(genEnv);
+    // generation
+    var generateLayoutButton = new UI.Button().setId('layout').onClick(generateLayout);
+    container.add(generateLayoutButton);
+    var clearLayoutButton = new UI.Button().setId('clear-layout').onClick(function () {
+        sculptor.sculpture.clear();
+    });
+    container.add(clearLayoutButton);
 
     container.add(new UI.HorizontalRule());
 
@@ -44,7 +46,7 @@ Leftbar.Layout = function (sculptor) {
     // show morph controls
 
     container.add(new UI.Text('Morph controls').setFontSize('20px').setWidth('100%'));
-    var morphControlRow = new UI.Row().setMarginLeft('20px');
+    var morphControlRow = new UI.Row().setMarginLeft('10px');
     container.add(morphControlRow);
     let currentMorph = '';
     let morphMaps = {'T':'bias','R':'rotation','S':'size'};
@@ -58,6 +60,9 @@ Leftbar.Layout = function (sculptor) {
             morphOpButtons.push(bt);
         }
     })();
+
+    var morphTrans = Leftbar.MorphTransforms(sculptor);
+    container.add(morphTrans);
 
     function showMorphControls(op) {
         // reset materials
@@ -105,14 +110,14 @@ Leftbar.Layout = function (sculptor) {
     container.add(new UI.HorizontalRule());
 
     container.add(new UI.Text('Mechanism').setFontSize('20px').setWidth('100%'));
-    var axisWidthRow = new UI.Row();
-    container.add(axisWidthRow);
-    axisWidthRow.add(new UI.Text('axis width'));
-    var axisWidth = new UI.Number().setRange(0.01,1).onChange(function (){
-        if (!sculptor.sculpture) return;
-        sculptor.sculpture.axisWidth = axisWidth.getValue();
-    });
-    axisWidthRow.add(axisWidth);
+    // var axisWidthRow = new UI.Row();
+    // container.add(axisWidthRow);
+    // axisWidthRow.add(new UI.Text('axis width'));
+    // var axisWidth = new UI.Number().setRange(0.01,1).onChange(function (){
+    //     if (!sculptor.sculpture) return;
+    //     sculptor.sculpture.axisWidth = axisWidth.getValue();
+    // });
+    // axisWidthRow.add(axisWidth);
     var genMech = new UI.Button('solve transmissions').onClick(generateMechanism);
     container.add(genMech);
 
@@ -144,24 +149,10 @@ Leftbar.Layout = function (sculptor) {
         }
     }
 
-    function genEnvelope () {
-        if (sculptor.sculpture==undefined) {
-            return;
-        }
-        // sculptor.sculpture.generateEnvelope();
-        sculptor.sculpture.buildOutlines();
-    }
-
     // get scale factor based on unit size and axis k
     signals.sceneChanged.add(function(name){
-        if(name!='layoutScene') return;
-        let axis = null;
-        for (let obj of sculptor.scenes.layoutScene.children) {
-            if (obj.role == 'axis') {
-                axis = obj;
-            }
-        }
-        let k = getCurvatureData(axis.curve,200).radius.min*axis.scale.x;
+        if(name!='layoutScene'||sculptor.unit.skeleton.children.length==0||!sculptor.axis) return;
+        let k = getCurvatureData(sculptor.axis.curve,200).radius.min*sculptor.axis.scale.x;
         let r = sculptor.unit.getMaxRadius()*sculptor.unit.scale.x;
         if (r == 0) {
             gScale.setValue(1);
@@ -169,11 +160,6 @@ Leftbar.Layout = function (sculptor) {
             let s = Math.min(0.9*k/r,1);
             gScale.setValue(s);
         }
-    });
-
-    signals.sculptureSelected.add(function(sculpture){
-        if (!sculpture) return;
-        axisWidth.setValue(sculpture.axisWidth);
     });
 
     return container;

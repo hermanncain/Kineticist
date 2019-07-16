@@ -42,7 +42,7 @@ var Leftbar = function ( sculptor ) {
     }
 
     // initialize
-    switchMode('sketchScene');
+    switchMode(sculptor.currentScene.name);
 
     return container;
     

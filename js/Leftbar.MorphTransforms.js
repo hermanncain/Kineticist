@@ -1,16 +1,16 @@
-Rightbar.MorphTransforms = function (sculptor) {
+Leftbar.MorphTransforms = function (sculptor) {
 
     var signals = sculptor.signals;
 
-    var container = new UI.Panel().setId('rightbar-morphtransforms');
+    var container = new UI.Panel().setId('morphtransforms');
     // return container;
     // Inner transforms
-    container.add(new UI.Text('Morph ops').setFontSize('20px'));
+    container.add(new UI.Text('Morph ops').setFontSize('20px').setWidth('100%'));
 
     // morph translation
     var biasRow = new UI.Row();
     container.add(biasRow);
-    biasRow.add(new UI.Text('translation').setWidth('70px'));
+    biasRow.add(new UI.Text('t').setWidth('30px').setMarginLeft('20px'));
     biasRow.add(new UI.Button('+').onClick(function (){
         addKey('bias');
     }));
@@ -35,7 +35,7 @@ Rightbar.MorphTransforms = function (sculptor) {
     // morph rotation
     var rotationRow = new UI.Row();
     container.add(rotationRow);
-    rotationRow.add(new UI.Text('rotation').setWidth('70px'));
+    rotationRow.add(new UI.Text('r').setWidth('30px').setMarginLeft('20px'));
     rotationRow.add(new UI.Button('+').onClick(function (){
         addKey('rotation');
     }));
@@ -60,7 +60,7 @@ Rightbar.MorphTransforms = function (sculptor) {
     // morph scale
     var sizeRow = new UI.Row();
     container.add(sizeRow);
-    sizeRow.add(new UI.Text('scale').setWidth('70px'));
+    sizeRow.add(new UI.Text('s').setWidth('30px').setMarginLeft('20px'));
     sizeRow.add(new UI.Button('+').onClick(function (){
         addKey('size');
     }));
@@ -140,7 +140,6 @@ Rightbar.MorphTransforms = function (sculptor) {
             }
             sculptor.sculpture.units.children[i][morphOpMap[key]](ns[0],ns[1],ns[2]);
             sculptor.sculpture.units.children[i].generateShape();
-            console.log(sculptor.sculpture.units.children[i].userData.morphTrans);
         }
         
     }

@@ -24,6 +24,7 @@ var Topbar = function ( sculptor ) {
     title.dom.style.fontFamily='Impact';
     container.add(title);
 
+
 	// file operations
 	var fileRow = new UI.Row();
 	container.add( fileRow );
@@ -114,14 +115,8 @@ var Topbar = function ( sculptor ) {
 
 	}
 
-	// export to other formats
-	var printKS = new UI.Button().setId('print').onClick(function(){
 
-	});
-	printKS.dom.title = 'export to .stl';
-	// fileRow.add( printKS );
-
-	// building operation
+	// building operations
 	var buildRow = new UI.Row();
 	container.add(buildRow);
 	var buildButtons = [];
@@ -137,6 +132,7 @@ var Topbar = function ( sculptor ) {
             buildButtons.push(bt);
 		}
 	})();
+
 
 	// simulation operations
 	var controlRow = new UI.Row();
@@ -158,11 +154,13 @@ var Topbar = function ( sculptor ) {
 	var reset = new UI.Button().setId('reset').onClick(function () {
 		sculptor.isPlay = false;
 		play.setId('play');
-		for (uuid in sculptor.sculptures) {
-			sculptor.sculptures[uuid].reset();
-		}
+		sculptor.sculpture.reset();
+		// for (uuid in sculptor.sculptures) {
+		// 	sculptor.sculptures[uuid].reset();
+		// }
 	});
 	controlRow.add(reset);
+
 
 	// for debug and figures in paper
 
@@ -197,6 +195,7 @@ var Topbar = function ( sculptor ) {
 	});
 	// controlRow.add(test2);
 
+	
 	// transform operations
 	var transformRow = new UI.Row().setDisplay('none');
 	container.add(transformRow);
@@ -231,8 +230,8 @@ var Topbar = function ( sculptor ) {
 	transformRow.add(worldTransform);
 
 	// duplicate
-	// var duplicate = new UI.Button().setId('duplicate').onClick(function () {});
-	// transformRow.add(duplicate);
+	var duplicate = new UI.Button().setId('duplicate').onClick(function () {});
+	transformRow.add(duplicate);
 
 	// remove
 	var remove = new UI.Button().setId('remove').onClick(function () {
@@ -240,10 +239,10 @@ var Topbar = function ( sculptor ) {
 	});
 	transformRow.add(remove);
 
+
 	// get help on github
 	var github = new UI.Button().setId('github').setPosition('absolute').setRight('20px').onClick(function(){
-		// window.open('https://github.com/hermanncain/kinetic_sculptor');
-		alert('TODO');
+		window.open('https://github.com/hermanncain/Cycler');
 	});
 	container.add( github );
 
@@ -255,17 +254,29 @@ var Topbar = function ( sculptor ) {
 
 	function selectMode(name) {
 		if (name=='layoutScene') {
-			// empty axis or empty unit
-			if (sculptor.axes.length==0 && sculptor.sketches.length==1) {
-				sculptor.setAsAxis(sculptor.sketches[0]);
+			if (!sculptor.sketches.length) {
+				alert('no sketch!');
+				return;
 			}
-		// 	if (sculptor.axes.length==0) {
-		// 		alert('please set axis first!');
-		// 		return;
-		// 	} else if (sculptor.axes.length>1 && !sculptor.selectedSculpture) {
-		// 		alert('please select an axis!');
-		// 		return;
-		// 	}
+			if (sculptor.axis==null) {
+				let allOrdered = sculptor.sketches.reduce(function(a,b){
+					return a.timeOrder || b.timeOrder;
+				});
+				let allUnordered = sculptor.sketches.reduce(function(a,b){
+					return a.timeOrder && b.timeOrder;
+				});
+				// if all sketches are time-ordered, keep null axis
+				// else set sketch[0] as axis
+				// then make all sketches 0 ordered
+				// and attach them to the sculpture as contours
+				if (!(allOrdered && allUnordered)) {
+					sculptor.setRole(sculptor.sketches[0],'axis');
+					for (let i=1;i<sculptor.sketches.length;i++) {
+						sculptor.setRole(sculptor.sketches[i],'contour');
+						sculptor.sketches[i].setTimeOrder(0);
+					}
+				}
+			}
 		}
 		for (let b of buildButtons) {
             if (b.dom.id == name) {
@@ -277,21 +288,21 @@ var Topbar = function ( sculptor ) {
 		signals.sceneChanged.dispatch(name);
 	}
 
-	function updateModes(name) {
-		for (let b of buildButtons) {
-            if (b.dom.id == name) {
-				// if (b.dom.classList.contains('selected')) {
-				// 	b.dom.classList.remove('selected');
-				// } else {
-					b.dom.classList.add('selected');
-				// }
-            } else {
-				b.dom.classList.remove('selected');
-            }
-		}
-		// signals.leftbarChanged.dispatch(name);
-		// signals.sceneChanged.dispatch(name);
-	}
+	// function updateModes(name) {
+	// 	for (let b of buildButtons) {
+    //         if (b.dom.id == name) {
+	// 			// if (b.dom.classList.contains('selected')) {
+	// 			// 	b.dom.classList.remove('selected');
+	// 			// } else {
+	// 				b.dom.classList.add('selected');
+	// 			// }
+    //         } else {
+	// 			b.dom.classList.remove('selected');
+    //         }
+	// 	}
+	// 	// signals.leftbarChanged.dispatch(name);
+	// 	// signals.sceneChanged.dispatch(name);
+	// }
 
 	// signals.leftbarChanged.add(function(name){
 	// 	updateModes(name);
@@ -314,31 +325,21 @@ var Topbar = function ( sculptor ) {
 		} else {
 			transformRow.setDisplay('');
 		}
-		if (object.name == 'vp'||object.name=='control point') {
+		if (object.name=='control point' || object.name == 'ribpoint') {
 			translate.setDisplay('');
 			rotate.setDisplay('none');
 			scale.setDisplay('none');
-			remove.setDisplay('');
-		} else if (object.name == 'ribpoint') {
-			translate.setDisplay('');
-			rotate.setDisplay('none');
-			scale.setDisplay('none');
-			remove.setDisplay('none');
+			// remove.setDisplay('');
 		} else if (object instanceof Rib) {
 			translate.setDisplay('none');
 			rotate.setDisplay('');
 			scale.setDisplay('');
 			remove.setDisplay('');
-		} else if (object instanceof Unit){
-			// translate.setDisplay('none');
-			translate.setDisplay('');
-			rotate.setDisplay('');
-			scale.setDisplay('');
 		}
 	})
 
 	// initialize
-	selectMode('sketchScene');
+	selectMode(sculptor.currentScene.name);
 
 	return container;
 

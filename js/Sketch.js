@@ -19,7 +19,7 @@ function Sketch (name='line', keyPoints=[], parameters, role='sketch', closed=fa
     this.selected = false;
 
     // Inner parameters
-    this.pointSize = 0.3;
+    this.pointSize = 1;
     this.width = 2;
     this.curveResolution = 50;
     if (lineMode == 'gl') {
@@ -78,6 +78,9 @@ Sketch.prototype = Object.assign(Object.create(THREE.Object3D.prototype), {
     setRole: function (role) {
         if (this.role == role) return;
         this.role = role;
+        if (role == 'axis') {
+            this.timeOrder = 0;
+        }
         if (this.selected) {
             this.select();
         } else {
@@ -185,7 +188,7 @@ Sketch.prototype = Object.assign(Object.create(THREE.Object3D.prototype), {
         for (let p of this.keyPoints) {
             let pointGeometry = new THREE.BufferGeometry();
             pointGeometry.addAttribute( 'position', new THREE.BufferAttribute( new Float32Array([0, 0, 0]), 3 ) );
-            let pointMesh = new THREE.Points(pointGeometry,new THREE.PointsMaterial( { color: this.material.color } ));
+            let pointMesh = new THREE.Points(pointGeometry,new THREE.PointsMaterial( { color: this.material.color, size:this.pointSize } ));
             pointMesh.name = 'control point';
             // Layer 1: points
             pointMesh.layers.set(1);

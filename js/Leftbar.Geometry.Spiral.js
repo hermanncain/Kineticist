@@ -1,4 +1,4 @@
-Rightbar.Geometry.Spiral = function ( sculptor, object ) {
+Leftbar.Geometry.Spiral = function ( sculptor, object ) {
     var container = new UI.Row();
     container.add(new UI.Text('Spiral / Helix').setFontSize('18px').setWidth('100%'));
 	var parameters = object.parameters;

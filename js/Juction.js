@@ -216,7 +216,7 @@ Junction.prototype = Object.assign(Object.create(THREE.Object3D.prototype), {
             forGeometry.fromGeometry(barGeo);
             forGeometry.rotateX(Math.PI/2)
             let fork = new THREE.Mesh(forGeometry,forkColoredMaterial);
-            rod.name = 'unit-fork';
+            fork.name = 'unit-fork';
             fork.layers.set(4);
             this.add(fork);
             fork.position.copy(this.skeleton.position);

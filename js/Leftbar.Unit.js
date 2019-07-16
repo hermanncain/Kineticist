@@ -3,17 +3,32 @@ Leftbar.Unit = function (sculptor) {
     var signals = sculptor.signals;
 
     var container = new UI.Panel().setId('leftbar-unit');
-    
+    container.add(new UI.Text('Unit Modeling').setWidth('100%'));
+
     // draw unit skeletons
     var vpRow = new UI.Row();
     container.add(vpRow);
-    vpRow.add(new UI.Text('Unit skeleton').setWidth('180px'));
+    vpRow.add(new UI.Text('skeleton').setWidth('180px'));
     var drawRibButton = new UI.Button().setId('gen-vg').onClick(clickDraw);
     vpRow.add(drawRibButton);
     var circleArrayButton = new UI.Button().setId('ca').onClick(simulateCA);
     vpRow.add(circleArrayButton);
-    var selectAll = new UI.Button().setId('select-all').onClick(selectRound);
-    vpRow.add(selectAll);
+    // var selectAll = new UI.Button().setId('select-all').onClick(selectRound);
+    // vpRow.add(selectAll);
+    var polygonShaped = new UI.Button().setId('polygon').onClick(function(){
+        if(sculptor.unit.shape == 'polygon') {
+            sculptor.unit.shape = 'propeller';
+            polygonShapeRow.setDisplay('none');
+            propellerShapeRow.setDisplay('');
+            polygonShaped.dom.classList.remove('selected');
+        } else if (sculptor.unit.shape == 'propeller') {
+            sculptor.unit.shape = 'polygon';
+            polygonShapeRow.setDisplay('');
+            propellerShapeRow.setDisplay('none');
+            polygonShaped.dom.classList.add('selected');
+        }
+    });
+    vpRow.add(polygonShaped);
 
     // batch duplication: circle array
     var caRow = new UI.Row().setDisplay('none');
@@ -23,12 +38,33 @@ Leftbar.Unit = function (sculptor) {
     caRow.add(caNumber);
     var generateArray = new UI.Button().setId('gca').onClick(applyArray);
     caRow.add(generateArray);
-    var cancelArray = new UI.Button().setId('cca').onClick(cancelArray);
-    caRow.add(cancelArray);
+    var cancelArrayButton = new UI.Button().setId('cca').onClick(cancelArray);
+    caRow.add(cancelArrayButton);
 
-    container.add(new UI.HorizontalRule());
+    // container.add(new UI.HorizontalRule());
 
-    container.add(new UI.Text('Unit blades').setWidth('180px'));
+    // shape configurations
+    // polygon shape
+    var polygonShapeRow = new UI.Row().setDisplay('none');
+    container.add(polygonShapeRow);
+    polygonShapeRow.add(new UI.Text('polygon shape').setWidth('100%'));
+
+    // TODO: bevel and depth config
+    polygonShapeRow.add(new UI.Text('bevel').setFontSize('16px').setWidth('70px'));
+    var bevel = new UI.Number();
+    polygonShapeRow.add(bevel);
+    polygonShapeRow.add(new UI.Text('depth').setFontSize('16px').setWidth('70px'));
+    var depth = new UI.Number();
+    polygonShapeRow.add(depth);
+    polygonShapeRow.add(new UI.Text('convex').setFontSize('16px').setWidth('70px'));
+    var convex = new UI.Number();
+    polygonShapeRow.add(convex);
+
+    // propeller shape
+    var propellerShapeRow = new UI.Row();
+    container.add(propellerShapeRow);
+    propellerShapeRow.add(new UI.Text('propeller shape').setWidth('100%'));
+    // container.add(new UI.Text('blades').setWidth('180px'));
     // tabs
     var semanticTab = new UI.Button().setId('semantic-tab').onClick(function(){
         select('semantic');
@@ -43,23 +79,27 @@ Leftbar.Unit = function (sculptor) {
     var tabs = new UI.Div().setMargin('10px');
     tabs.setId( 'leftbar-unit-tabs' );
     tabs.add( semanticTab, bladeTab, accessoryTab );
-    container.add( tabs );
+    propellerShapeRow.add( tabs );
 
     // configs
     var semanticConfig = new Leftbar.Unit.Semantic(sculptor);
-    container.add( semanticConfig );
+    propellerShapeRow.add( semanticConfig );
 
     var bladeConfig = new Leftbar.Unit.Blade(sculptor);
-    container.add( bladeConfig );
+    propellerShapeRow.add( bladeConfig );
 
     var accessoryConfig = new Leftbar.Unit.Accessory(sculptor);
-    container.add( accessoryConfig );
+    propellerShapeRow.add( accessoryConfig );
 
     function select(selection) {
         
         semanticTab.dom.classList.remove( 'selected' );
 		bladeTab.dom.classList.remove( 'selected' );
         accessoryTab.dom.classList.remove( 'selected' );
+
+        semanticTab.setBorderBottom('solid 1px black');
+        bladeTab.setBorderBottom('solid 1px black')
+        accessoryTab.setBorderBottom('solid 1px black')
         
         semanticConfig.setDisplay( 'none' );
         bladeConfig.setDisplay( 'none' );
@@ -68,14 +108,17 @@ Leftbar.Unit = function (sculptor) {
 		switch ( selection ) {
 			case 'semantic':
                 semanticTab.dom.classList.add( 'selected' );
+                semanticTab.setBorderBottom('none');
 				semanticConfig.setDisplay( '' );
 				break;
 			case 'blade':
                 bladeTab.dom.classList.add( 'selected' );
+                bladeTab.setBorderBottom('none');
 				bladeConfig.setDisplay( '' );
 				break;
 			case 'accessory':
                 accessoryTab.dom.classList.add( 'selected' );
+                accessoryTab.setBorderBottom('none');
 				accessoryConfig.setDisplay( '' );
                 break;
             default:
@@ -83,12 +126,12 @@ Leftbar.Unit = function (sculptor) {
 		}
     }
 
-    container.add(new UI.HorizontalRule());
+    // container.add(new UI.HorizontalRule());
 
     // generate geometry
     var genRow = new UI.Row();
     container.add(genRow);
-    genRow.add(new UI.Text('Unit mesh').setWidth('180px'));
+    genRow.add(new UI.Text('mesh').setWidth('180px'));
 
     var genBtn = new UI.Button().setId('gen').onClick(function(){
         sculptor.unit.generateShape();
@@ -97,6 +140,7 @@ Leftbar.Unit = function (sculptor) {
         // uploadRow.setDisplay('none');
     });
     genRow.add(genBtn);
+
     var clBtn = new UI.Button().setId('clear').onClick(function(){
         sculptor.unit.clearShapes();
         // importBtn.dom.classList.remove('selected');
@@ -133,23 +177,23 @@ Leftbar.Unit = function (sculptor) {
         }
     }
 
-    function selectRound () {
-        sculptor.deselectGroup();
-        if (sculptor.selected instanceof Rib) {
-            for (let rib of sculptor.unit.skeleton.children) {
-                rib.select();
-                sculptor.selectedGroup.push(rib);
-            }
-        } else if (sculptor.selected.name == 'ribpoint') {
-            let container = sculptor.selected.parent;
-            let idx = container.parent.children.indexOf(container)
-            for (let rib of sculptor.unit.skeleton.children) {
-                let pt = rib.children[idx].children[0];
-                pt.material.color.setHex(0xffaa00);
-                sculptor.selectedGroup.push(pt);
-            }
-        }
-    }
+    // function selectRound () {
+    //     sculptor.deselectGroup();
+    //     if (sculptor.selected instanceof Rib) {
+    //         for (let rib of sculptor.unit.skeleton.children) {
+    //             rib.select();
+    //             sculptor.selectedGroup.push(rib);
+    //         }
+    //     } else if (sculptor.selected.name == 'ribpoint') {
+    //         let container = sculptor.selected.parent;
+    //         let idx = container.parent.children.indexOf(container)
+    //         for (let rib of sculptor.unit.skeleton.children) {
+    //             let pt = rib.children[idx].children[0];
+    //             pt.material.color.setHex(0xffaa00);
+    //             sculptor.selectedGroup.push(pt);
+    //         }
+    //     }
+    // }
 
     signals.drawModeChanged.add(function(mode){
         if (mode == 'normal') {

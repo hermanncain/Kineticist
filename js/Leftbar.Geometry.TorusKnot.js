@@ -1,4 +1,4 @@
-Rightbar.Geometry.TorusKnot = function ( sculptor, object ) {
+Leftbar.Geometry.TorusKnot = function ( sculptor, object ) {
     var container = new UI.Row();
     container.add(new UI.Text('TorusKnot').setFontSize('18px'));
 	var parameters = object.parameters;

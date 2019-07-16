@@ -30,7 +30,7 @@ class Sculptor {
         this.sceneHelpers.add(axesHelper);
 
         // 1.3 camera
-        this.camera = new THREE.PerspectiveCamera( 50, 1, 0.1, 10000 );
+        this.camera = new THREE.PerspectiveCamera( 45, 1, 0.1, 10000 );
         this.initialCameraPosition = new THREE.Vector3( 0, 0, 50);
         // control visibility of points, lines, skeletons and unit meshes
         this.camLayers = 6;
@@ -63,14 +63,7 @@ class Sculptor {
             generateSkeleton: new Signal(),
             // selection
             objectSelected: new Signal(),
-            pointSelected: new Signal(),
-            sketchSelected: new Signal(),
-            sculptureSelected: new Signal(),
-            selectModeChanged: new Signal(),
-            pointChanged: new Signal(),
-            sketchChanged: new Signal(),
             worldTransform: new Signal(),
-            
             objectTransformed: new Signal(),
             transformModeChanged: new Signal(),
             // unit
@@ -96,7 +89,8 @@ class Sculptor {
         this.scenes.sketchScene.name = 'sketchScene';
         this.scenes.layoutScene = this.scene.clone();
         this.scenes.layoutScene.name = 'layoutScene';
-        this.currentScene = this.scenes.sketchScene;
+        this.currentScene = this.scenes.sketchScene;        
+
         this.currentMaterial = grayMaterial;
         this.showKeys = false;
 
@@ -109,46 +103,48 @@ class Sculptor {
 
         // 2.4 selections
         this.selected = null;
-        this.selectedSketch = null;
-        this.selectedSculpture = null;
+        // this.selectedSketch = null;
+        // this.selectedSculpture = null;
         this.selectedGroup = [];
 
-        // 2.5 singleton unit
+        // 2.5 singletons: unit, axis and sculpture
         this.unit = new Unit();
         this.unit.setMaterial(grayMaterial);
         this.scenes.unitScene.add(this.unit);
+        this.axis = null;
+        this.sculpture = new KineticSculpture();
+        this.sculpture.unit = this.unit;
+        this.scenes.layoutScene.add(this.sculpture);
 
         // 2.6 sketches
         this.sketches = [];
-        this.axes = [];
-
-        // 2.7 sculptures
-        this.sculptures = {};
-        this.sculpture = null;
         
-        // 2.8 sculpture morphing controls
+        // 2.7 sculpture morphing controls
         this.unitMorphKeys = {bias:[],rotation:[],size:[]};
         // TODO
         // this.ribMorphKeys = {bias:[],rotation:[],size:[]};
         // this.decMorphKeys = [];
 
-        // 2.9 simulation control
+        // 2.8 simulation control
         this.isPlay = false;
     }
 
     select (object) {
+
         // select the same object
         if ( this.selected === object ) return;
+
         // handle previous selected object
         if (this.selected != null) {
-            // deselect sketch
-            if(this.selected.name == 'sketch line') {
-                this.selected.parent.deselect();
-            } else if (this.selected instanceof Rib) {
+            // deselect
+            if(this.selected instanceof Sketch || this.selected instanceof Rib) {
                 this.selected.deselect();
             } else if (this.selected.name == 'ribpoint') {
                 this.selected.material.color.setHex(0x0000ff);
-            } else if (this.selected.type == 'Unit') {
+            } else if (this.selected.name == 'control point') {
+                this.selected.material.color.setHex(0x0000ff);
+                this.selected.material.color.copy(this.selected.parent.material.color);
+            } else if (this.selected instanceof Unit) {
                 if (this.showKeys) {
                     let isKey = false;
                     for (let key in this.unitMorphKeys) {
@@ -167,19 +163,18 @@ class Sculptor {
                 }
             }
         }
+
+        // handle current selecting object
         if (object != null) {
             this.selected = object;
-            // console.log(this.selected)
-            if (this.selected.type == 'Unit') {
-                // this.selected.select();
+            if (this.selected instanceof Sketch || this.selected instanceof Rib) {
+                this.selected.select();
+            } else if (this.selected instanceof Unit) {
                 this.selected.setMaterial(selectedMaterial);
-            } else {
-                this.selected = object;
             }
         } else {
             this.selected = object;
         }
-        // console.log('sculptor',this.selected)
 		this.signals.objectSelected.dispatch( this.selected );
     }
 
@@ -187,52 +182,20 @@ class Sculptor {
         this.select(null);
     }
 
-    deselectGroup() {
-        if (this.selectedGroup.length==0) return;
-        if (this.selectedGroup[0] instanceof Rib) {
-            this.selectedGroup.map(function(rib){rib.deselect()});
-        } else if (this.selectedGroup[0].name == 'ribpoint') {
-            this.selectedGroup.map(function(pt){
-                pt.material.color.setHex(0x0000ff);
-            });
-        }
-    }
-
     remove (object) {
         if (!object) return;
         if (object instanceof Rib) {
             this.unit.removeRib(object);
-        } else if (object.name = 'sketch line') {
-            this.removeSketch(object.parent);
-        } else if (object.name = 'control point'){
-        } else {
-            this.scene.remove(object);
+        } else if (object instanceof Sketch) {
+            this.removeSketch(object);
+            object.dispose();
         }
-        this.deselect ();
-    }
-
-    selectSketch (sketch) {
-        if (sketch != null) {
-            sketch.select();
-        }
-        this.selectedSketch = sketch;
-        this.signals.sketchSelected.dispatch(sketch);
-    }
-
-    selectSculpture (sketch) {
-        if (sketch == null) {
-            this.selectedSculpture = null;
-        } else {
-           this.selectedSculpture = this.sculptures[sketch.uuid]; 
-           this.sculpture = this.selectedSculpture;
-        }
-        this.signals.sculptureSelected.dispatch(this.selectedSculpture);
+        this.deselect();
     }
 
     addSketch (sketch) {
         this.scenes.sketchScene.add(sketch);
         this.sketches.push(sketch);
-        // this.sketches.push(sketch);
     }
 
     removeSketch (sketch) {
@@ -240,11 +203,9 @@ class Sculptor {
         if (this.sketches.indexOf(sketch)>-1) {
             this.sketches.splice(this.sketches.indexOf(sketch),1);
         }
-        if (this.axes.indexOf(sketch)>-1) {
-            this.axes.splice(this.axes.indexOf(sketch),1);
+        if (this.axis == sketch) {
+            this.axis = null;
         }
-        // TODO
-        // remove related skeletons if exist
     }
 
     switchScene (name) {
@@ -266,51 +227,38 @@ class Sculptor {
         }
     }
 
-    setAsAxis (sketch) {
-        if (sketch.role == 'axis') return;
-        sketch.setRole('axis');
-        if (this.axes.indexOf(sketch)<0) {
-            this.axes.push(sketch);
-            this.sculptures[sketch.uuid] = new KineticSculpture(sketch);
+    // set curve's roles
+    setRole (sketch, role) {
+        if (sketch.role == role) {
+            return;
         }
-        // this.scenes.sketchScene.add(this.sculptures[sketch.uuid]);
-        this.selectSculpture(sketch);
-        this.signals.sketchChanged.dispatch(sketch);
-    }
-
-    // TODO
-    // contour or sketch?
-    setAsContour (sketch) {
-        if (sketch.role == 'contour') return;
-        sketch.setRole('contour');
-        if (this.axes.indexOf(sketch)>-1) {
-            this.axes.splice(this.axes.indexOf(sketch),1);
-            delete this.sculptures[sketch.uuid];
-        }
-        this.signals.sketchChanged.dispatch(sketch);
-    }
-
-    appendSketch(sketch) {
-        this.selectedSculpture.appendSketch(sketch);
-    }
-
-    // appendReference(ref) {
-    //     this.selectedSculpture.appendSketch(ref);
-    //     // commented out for continuous selection & appending
-    //     // this.signals.selectModeChanged.dispatch('normal');
-    //     // this.select(null);
-    // }
-    attachToSculpture(axis) {
-        let sculpture = this.sculptures[axis.uuid];
-        if (sculpture==undefined) {
-            alert('please set the curve as axis first!');
-        } else {
-            sculpture.appendSketch(this.selectedSketch);
-            this.signals.selectModeChanged.dispatch('normal');
-            axis.deselect();
-            this.select(null);
+        switch (role) {
+            case 'sketch':
+                if (sketch.role == 'axis') {
+                    this.axis = null;
+                    this.sculpture.setAxis(null);
+                } else if (sketch.role == 'contour') {
+                    this.sculpture.removeContour(sketch);
+                }
+                sketch.setRole(role);
+            case 'contour':
+                if (sketch.role == 'axis') {
+                    this.axis = null;
+                }
+                this.sculpture.addContour(sketch);
+            break;
+            case 'axis':
+                if (sketch.role == 'contour') {
+                    this.sculpture.removeContour(sketch);
+                } else if (this.axis) {
+                    this.axis.setRole('sketch');
+                }
+                this.sculpture.setAxis(sketch);
+                this.axis = sketch;
+            break;
         }
     }
+
     layout(p) {
         this.sculpture.layout(this.unit,p);
         this.resetMorphKeys();
@@ -330,15 +278,17 @@ class Sculptor {
 
     }
 
-    solveSkeletons () {
+    solveSkeletons (n) {
         let STSketches = [];
-        this.sketches.map(function(c){
+        this.sculpture.sketches.map(function(c){
+            console.log(c,STSketches[c.timeOrder-1])
             if (STSketches[c.timeOrder-1] === undefined) {
                 STSketches[c.timeOrder-1] = [c];
             } else {
                 STSketches[c.timeOrder-1].push(c);
             }
         });
+        console.log(STSketches)
         let M = STSketches[0].length;
         for (let sketch of STSketches) {
             if (M!=sketch.length) {
@@ -346,28 +296,44 @@ class Sculptor {
                 return;
             }
         }
-        this.solver = new prototypeSolver(STSketches);
-        // solver.buildSkeletons();
-        // for (let sculpture of solver.sculptures) {
-        //     this.scenes.layoutScene.add(sculpture);
-        // }
-        this.solver.solve();
-        this.addSketch(this.solver.axis);
-        // this.sketches.push(this.solver.axis);
-        this.setAsAxis(this.solver.axis);
-        // this.scenes.sketchScene.add(this.solver.axis);
-        // this.scenes.layoutScene.add(this.solver.sculpture);
-        
+        this.unit.dispose();
+        this.solver = new prototypeSolver(STSketches,null,n,this.unit,this.sculpture);
+        this.solver.initializeAxis();
+        this.axis = this.solver.axis;
+        this.scenes.layoutScene.add(this.axis);
     }
 
-    testAxisGen () {
-        // this.scenes.sketchScene.remove(this.solver.axis);
-        this.removeSketch(this.solver.axis);
-        this.solver.generateAxis();
-        // this.sketches.push(this.solver.axis);
+    testAxisGen (n) {
+        this.solver.n = n;
+        this.scenes.layoutScene.remove(this.solver.axis);
+        this.solver.searchAxisByJuncEnv();
+        // this.solver.generateAxis();
+        // this.solver.searchJunctionEnvelopes(n);
+        this.axis = this.solver.axis;
+        this.scenes.layoutScene.add(this.axis);
+    }
+
+    testJunction (n) {
+        // if (this.unit.skeleton.children.length==0) {
+        //     this.sculpture.unit = this.unit;
+        // } else {
+        //     this.sculpture.unit = new Unit();
+        // }
+        // let params = {
+        //     n,
+        //     scale:1,
+        //     torsion:0,
+        // }
         
-        this.addSketch(this.solver.axis);
-        this.setAsAxis(this.solver.axis);
+        // this.sculpture.setSleeveRadii();
+        // this.axis.sample(n);
+        // this.sculpture.layout(this.sculpture.unit, params,true);
+        // if(this.sculpture.buildJoints()) {
+        //     signals.infoChanged.dispatch('Got a feasible solution.');
+        // } else {
+
+        // }
+        this.solver.initializeJunctionEnvelopes();
     }
 
     toJSON() {
@@ -396,14 +362,14 @@ class Sculptor {
         this.unit.setMaterial(grayMaterial);
         this.scenes.unitScene.add(this.unit);
 
-        // restore sketches
+        // restore axis
         let axis = this.sculpture.axis;
-        this.sculptures[axis.uuid] = this.sculpture;
 
         // restore sketches
         this.sketches = [axis];
         this.sketches.push(...this.sculpture.sketches);
-        this.axes = [axis];
+        // this.axes = [axis];
+        this.axis = axis;
         
         // restore sculpture morphing controls
         let arr = this.sculpture.units.children;
@@ -417,4 +383,17 @@ class Sculptor {
         this.signals.sceneChanged.dispatch('unitScene');
     }
 
+    deselectGroup() {
+        if (this.selectedGroup.length==0) return;
+        if (this.selectedGroup[0] instanceof Rib) {
+            this.selectedGroup.map(function(rib){rib.deselect()});
+        } else if (this.selectedGroup[0].name == 'ribpoint') {
+            this.selectedGroup.map(function(pt){
+                pt.material.color.setHex(0x0000ff);
+            });
+        }
+    }
+
 }
+
+    

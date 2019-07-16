@@ -12,7 +12,7 @@
  *  - rod
  *  - fork
  */
-function Unit (params) {
+function Unit (shape='propeller') {
 
     THREE.Object3D.call(this);
 
@@ -21,10 +21,10 @@ function Unit (params) {
     this.isEmpty = false;
     this.metaRotation = new THREE.Euler();
     this.currentMaterial = grayMaterial;
-    
-    // data
-    this.userData = params || {
+    this.shape = shape;
 
+    // data
+    this.userData = {
         morphTrans: {
             bias:[0,0,0],
             rotation:[0,0,0],
@@ -70,25 +70,29 @@ function Unit (params) {
     this.add(this.templeSkeleton);
 
     // mechanisms
-    // 3. blades
-    this.blades = new THREE.Group();
-    this.blades.name = 'blades';
-    this.add(this.blades);
-
-    // 4. accessories
-    this.accessories = new THREE.Group();
-    this.accessories.name = 'accessories';
-    this.add(this.accessories);
-
-    // 5. entities
+    // 3. entities
     this.sleeve = null;
     this.bearing = null;
 
-    // 6. prototypes
+    // 4. prototypes
     this.sleeveRing = null;
     this.rod = null;
     this.fork = null;
 
+    // shapes
+    // 5. propellers
+    // 5.1 blades
+    this.blades = new THREE.Group();
+    this.blades.name = 'blades';
+    this.add(this.blades);
+
+    // 5.2 accessories
+    this.accessories = new THREE.Group();
+    this.accessories.name = 'accessories';
+    this.add(this.accessories);
+
+    // 6. polygons
+    this.polygon = null;
 }
 
 Unit.prototype = Object.assign(Object.create(THREE.Object3D.prototype), {
@@ -336,6 +340,11 @@ Unit.prototype = Object.assign(Object.create(THREE.Object3D.prototype), {
             this.remove(this.sleeve);
             this.sleeve = null;
         }
+        if (this.polygon) {
+            this.polygon.geometry.dispose();
+            this.remove(this.polygon);
+            this.polygon = null;
+        }
         if (this.bearing) {
             this.bearing.geometry.dispose();
             this.remove(this.bearing);
@@ -359,9 +368,55 @@ Unit.prototype = Object.assign(Object.create(THREE.Object3D.prototype), {
     },
 
     generateShape: function () {
-        this.buildSleeve();
-        this.buildBlades();
-        this.buildAccessories();
+        this.clearShapes();
+        if (this.shape=='propeller') {
+            this.buildSleeve();
+            this.buildBlades();
+            this.buildAccessories();
+        } else if (this.shape == 'polygon') {
+            this.buildSleeve();
+            this.buildPolygon();
+        }   
+    },
+
+    buildPolygon: function () {
+        // clear
+        if (this.polygon) {
+            this.traverse(function(obj){
+                if (obj.geometry) {
+                    obj.geometry.dispose();
+                }
+            })
+            this.remove(this.polygon);
+            this.polygon = null;
+        }
+
+        this.sortRibs();
+        let ps = [];
+        // TODO: bevel, depth, convex
+        for (let rib of this.skeleton.children) {
+            let v = new THREE.Vector3();
+            rib.end.localToWorld(v);
+            ps.push(v);
+        }
+        let shape = new THREE.Shape();
+        shape.moveTo(ps[0].x,ps[0].y);
+        for (let i=1;i<ps.length;i++) {
+            shape.lineTo(ps[i].x,ps[i].y);
+        }
+        shape.lineTo(ps[0].x,ps[0].y);
+        let hole = new THREE.Shape();
+        hole.arc(0,0,this.userData.sleeve.rOut);
+        shape.holes.push(hole);
+        let extrudeSettings = {
+            steps:1,
+            depth:0.5,
+            bevelEnabled:false
+        }
+        let geometry = new THREE.ExtrudeBufferGeometry(shape,extrudeSettings);
+        geometry.translate(0,0,-0.5/2);
+        this.polygon = new THREE.Mesh(geometry, this.currentMaterial);
+        this.add(this.polygon);
     },
 
     buildSleeve: function () {
@@ -573,7 +628,20 @@ Unit.prototype = Object.assign(Object.create(THREE.Object3D.prototype), {
     },
 
     getMechanisms: function () {
-        return [this.sleeve,this.blades,this.accessories];
+        let mech = [];
+        if (this.sleeve) {
+            mech.push(this.sleeve);
+        }
+        if (this.blades) {
+            mech.push(this.blades);
+        }
+        if (this.accessories) {
+            mech.push(this.accessories);
+        }
+        if (this.polygon) {
+            mech.push(this.polygon);
+        }
+        return mech;
     },
 
     toJSON: function () {

@@ -13,7 +13,7 @@ Leftbar.Sketch = function (sculptor) {
     var buttons = [];
 
     // 1. hand-drawn curves
-    //container.add(new UI.Text('draw').setWidth('160px'));
+    // container.add(new UI.Text('draw').setWidth('160px'));
 
     // pointed, no-referenced, can-be-closed
     var lineButton = new UI.Button().setId('line').onClick(function(){
@@ -31,11 +31,14 @@ Leftbar.Sketch = function (sculptor) {
     });
     container.add(brush2DButton);
     
-    var brush3DButton = new UI.Button().setId('brush3d').onClick(function(){
-        selectButton(brush3DButton.dom.id);
-    });
-    container.add(brush3DButton);
+    // TODO
+    // var brush3DButton = new UI.Button().setId('brush3d').onClick(function(){
+    //     selectButton(brush3DButton.dom.id);
+    // });
+    // container.add(brush3DButton);
     container.add(new UI.HorizontalRule());
+
+    buttons.push(...[lineButton, splineButton, brush2DButton/* , brush3DButton */]);
 
     // 2. instanced curves
     // parametric, no-referenced, closed
@@ -71,15 +74,13 @@ Leftbar.Sketch = function (sculptor) {
         sculptor.addSketch(knot);
     });
     container.add(decorativeKnotButton);
-    var importCurveButton = new UI.Button().setId('importCurve').onClick(function(){
-        //var knot = new Sketch('DecoratedTorusKnot', null, [2,2,0.6,5,0.75,10,0.35,5]);
-        //sculptor.addSketch(knot);
-        //selectButton(importCurveButton.dom.id);
-    });
-    container.add(importCurveButton);
+    // TODO
+    // var importCurveButton = new UI.Button().setId('importCurve').onClick(function(){
+        
+    // });
+    // container.add(importCurveButton);
     container.add(new UI.HorizontalRule());
 
-    buttons.push(...[lineButton, splineButton, brush2DButton, brush3DButton]);
 
     // curve operations
     // var biasButton = new UI.Button().setId('bias').onClick(function(){
@@ -128,30 +129,8 @@ Leftbar.Sketch = function (sculptor) {
 
     // buttons.push(...[autoButton,revolveButton,extrudeButton,expandButton]);
 
-    // set time order for sketches
-    container.add(new UI.Text('time order'));
-    for (let i=1;i<5;i++) {
-        var setTi = new UI.Button(i).setBackgroundColor('#'+timeOrderColors[i].toString(16)).onClick(function(){
-            for (let sketch of sculptor.sketches) {
-                if (sketch.timeOrder == 0) {
-                    sketch.setTimeOrder(i);
-                }
-            }
-        });
-        container.add(setTi);
-    }
-
-    // solve skeletons
-    var solveSkeletons = new UI.Button('solve').onClick(function(){
-        sculptor.solveSkeletons();
-    });
-    container.add(solveSkeletons);
-
-    // test axis gen
-    var testAxisGen = new UI.Button('AG').onClick(function(){
-        sculptor.testAxisGen();
-    });
-    container.add(testAxisGen);
+    var geometryConfig = new Leftbar.Geometry(sculptor);
+    container.add( geometryConfig );
 
     function selectButton (mode) {
         signals.drawModeChanged.dispatch(mode);

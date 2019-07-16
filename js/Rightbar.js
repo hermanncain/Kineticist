@@ -26,8 +26,8 @@ var Rightbar = function ( sculptor ) {
 	container.add( tabs );
 
     // configs
-    var geometryConfig = new Rightbar.Geometry(sculptor);
-    container.add( geometryConfig );
+    var transformsConfig = new Rightbar.Transforms(sculptor);
+    container.add( transformsConfig );
 
     var mechanismConfig = new Rightbar.Mechanism(sculptor);
     container.add( mechanismConfig );
@@ -40,21 +40,28 @@ var Rightbar = function ( sculptor ) {
         geometryTab.dom.classList.remove( 'selected' );
 		mechanismTab.dom.classList.remove( 'selected' );
         sceneTab.dom.classList.remove( 'selected' );
+
+        geometryTab.setBorderBottom('solid 1px black');
+        mechanismTab.setBorderBottom('solid 1px black')
+        sceneTab.setBorderBottom('solid 1px black')
         
-        geometryConfig.setDisplay( 'none' );
+        transformsConfig.setDisplay( 'none' );
         mechanismConfig.setDisplay( 'none' );
 		sceneConfig.setDisplay( 'none' );
 		switch ( section ) {
 			case 'geometry':
                 geometryTab.dom.classList.add( 'selected' );
-				geometryConfig.setDisplay( '' );
+                geometryTab.setBorderBottom('none');
+				transformsConfig.setDisplay( '' );
 				break;
 			case 'mechanism':
                 mechanismTab.dom.classList.add( 'selected' );
+                mechanismTab.setBorderBottom('none');
 				mechanismConfig.setDisplay( '' );
 				break;
 			case 'scene':
                 sceneTab.dom.classList.add( 'selected' );
+                sceneTab.setBorderBottom('none');
 				sceneConfig.setDisplay( '' );
 				break;
 		}
@@ -64,17 +71,21 @@ var Rightbar = function ( sculptor ) {
         if(obj == null) {
             select('scene');
         } else {
-            if (sculptor.currentScene.name == 'layoutScene') {
-                if (obj instanceof Unit) {
-                    select('geometry');
-                } else {
-                    select('mechanism');
-                }
+            if (obj instanceof Sketch) {
+                select('mechanism');
             } else {
                 select('geometry');
             }
         }
     });
+
+    signals.sceneChanged.add(function(name){
+        if (name == 'layoutScene') {
+            select('mechanism');
+        } else {
+            select('scene');
+        }
+    })
 
     select('scene');
 

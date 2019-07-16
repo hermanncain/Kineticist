@@ -151,11 +151,11 @@ Rib.prototype = Object.assign(Object.create(THREE.Object3D.prototype), {
     },
 
     select: function () {
-        this.curveContainer.children[0].material.color.setHex(0xffaa00);
+        this.setColor(0xffaa00);
     },
 
     deselect: function () {
-        this.curveContainer.children[0].material.color.setHex(0x0000ff);
+        this.setColor(0x0000ff);
     },
 
     setColor: function (hex) {

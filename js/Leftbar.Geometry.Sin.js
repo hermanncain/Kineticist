@@ -1,4 +1,4 @@
-Rightbar.Geometry.Sin = function ( sculptor, object ) {
+Leftbar.Geometry.Sin = function ( sculptor, object ) {
     var container = new UI.Row();
     container.add(new UI.Text('Sine').setFontSize('18px'));
 	var parameters = object.parameters;

@@ -46,8 +46,8 @@ Rightbar.Transforms = function (sculptor) {
 
     container.add( new UI.HorizontalRule() );
 
-    var morphTrans = Rightbar.MorphTransforms(sculptor);
-    container.add(morphTrans);
+    // var morphTrans = Rightbar.MorphTransforms(sculptor);
+    // container.add(morphTrans);
 
     var singleOp = new UI.Panel();
     container.add(singleOp);
@@ -139,7 +139,7 @@ Rightbar.Transforms = function (sculptor) {
             objectRotationRow.setDisplay('none');
             objectScaleRow.setDisplay('none');
             singleOp.setDisplay('');
-            morphTrans.setDisplay('none');
+            // morphTrans.setDisplay('none');
             updateCynlidricalUI(obj);
             updateServoEuclideanUI(obj);
         } else if (obj instanceof Rib) {
@@ -147,25 +147,25 @@ Rightbar.Transforms = function (sculptor) {
             objectRotationRow.setDisplay('');
             objectScaleRow.setDisplay('');
             singleOp.setDisplay('none');
-            morphTrans.setDisplay('none');
+            // morphTrans.setDisplay('none');
         } else if (obj instanceof Unit) {
             objectPositionRow.setDisplay('none');
             objectRotationRow.setDisplay('');
             objectScaleRow.setDisplay('');
             singleOp.setDisplay('none');
-            morphTrans.setDisplay('');
+            // morphTrans.setDisplay('');
         } else if (obj.name == 'control point') {
             objectPositionRow.setDisplay('');
             objectRotationRow.setDisplay('none');
             objectScaleRow.setDisplay('none');
             singleOp.setDisplay('none');
-            morphTrans.setDisplay('none');
+            // morphTrans.setDisplay('none');
         } else if (obj.parent instanceof Sketch) {
             objectPositionRow.setDisplay('');
             objectRotationRow.setDisplay('');
             objectScaleRow.setDisplay('');
             singleOp.setDisplay('none');
-            morphTrans.setDisplay('none');
+            // morphTrans.setDisplay('none');
         }
         selectedName.setValue(obj.name);
     });

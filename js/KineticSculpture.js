@@ -16,9 +16,9 @@ function KineticSculpture (axis=null, sketches=[]) {
     this.units = new THREE.Group();
     this.add(this.units);
 
-    // Contours built from unit skeleton ends
-    this.contours = new THREE.Group();
-    this.add(this.contours);
+    // Outlines built from unit skeleton ends
+    this.outlines = new THREE.Group();
+    this.add(this.outlines);
 
     // Axis mechanism
     this.axisWidth = 0.11;
@@ -35,11 +35,11 @@ KineticSculpture.prototype = Object.assign(Object.create(THREE.Object3D.prototyp
             this.axisMech.geometry.dispose();
             this.remove(this.axisMech);
         }
-        for (let contour of this.contours.children) {
+        for (let contour of this.outlines.children) {
             contour.dispose();
-            this.contours.remove(contour);
+            this.outlines.remove(contour);
         }
-        this.contours.children = [];
+        this.outlines.children = [];
         for (let unit of this.units.children) {
             unit.dispose();
         }
@@ -48,32 +48,33 @@ KineticSculpture.prototype = Object.assign(Object.create(THREE.Object3D.prototyp
 
     // sculpture skeleton operations
     setAxis: function (sketch) {
+        sketch.setRole('axis');
         this.axis = sketch;
     },
 
-    appendSketch: function (obj){
+    addContour: function (obj){
         if (this.sketches.indexOf(obj)<0) {
             this.sketches.push(obj);
         }
-        if (obj.type == 'Sketch') {
+        if (obj instanceof Sketch) {
             obj.deselect();
             obj.setRole('contour');
         }      
     },
 
-    removeSketch: function (obj) {
-        if (obj.type == 'sketch') {
+    removeContour: function (obj) {
+        if (obj instanceof Sketch) {
             obj.deselect();
-            obj.setRole('contour');
+            obj.setRole('sketch');
         }
         this.sketches.splice(this.sketches.indexOf(obj),1);
     },
 
-    clearSketch: function () {
+    clearContours: function () {
         for (let obj of this.sketches) {
-            if (obj.type == 'sketch') {
+            if (obj instanceof Sketch) {
                 obj.deselect();
-                obj.setRole('contour');
+                obj.setRole('sketch');
             }
         }
         this.sketches = [];
@@ -100,7 +101,10 @@ KineticSculpture.prototype = Object.assign(Object.create(THREE.Object3D.prototyp
             frames = this.axis.getReferencedFrames(this.sketches[0],params.n);
         }
         for (let i=0;i<positions.length;i++) {
-            if (!frames.normals[i]) continue;
+            if (!frames.normals[i]) {
+                console.log('missing')
+                continue;
+            }
             let u = this.unit.clone();
             u.idx = i;
             // align to frame
@@ -130,12 +134,9 @@ KineticSculpture.prototype = Object.assign(Object.create(THREE.Object3D.prototyp
 
 
     // Outline
-    // draw spline contours passing through unit ends
+    // draw spline outlines passing through unit ends
     buildOutlines: function () {
-        for (let contour of this.contours.children) {
-            contour.dispose();
-        }
-        this.contours.children = [];
+        this.clearOutlines();
 
         let n = this.units.children[0].skeleton.children.length;
         for (let i=0;i<n;i++) {
@@ -145,8 +146,18 @@ KineticSculpture.prototype = Object.assign(Object.create(THREE.Object3D.prototyp
                 pts.push(end.localToWorld(new THREE.Vector3()));
             }
             let curve = new Sketch('spline',pts,undefined,'sketch',this.axis.closed);
-            this.contours.add(curve);
+            curve.pointMeshes.map(function(p){
+                p.material.size = 0.3;
+            });
+            this.outlines.add(curve);
         }
+    },
+
+    clearOutlines: function () {
+        for (let contour of this.outlines.children) {
+            contour.dispose();
+        }
+        this.outlines.children = [];
     },
 
 
@@ -159,14 +170,7 @@ KineticSculpture.prototype = Object.assign(Object.create(THREE.Object3D.prototyp
         this.units.children = [];
     },
 
-    buildSkeleton: function (dist=Infinity,freq=20) {
-
-        this.clearSkeleton();
-        this.clear();
-
-        // initialize an empty unit
-        this.unit = new Unit();
-        let params = {n:freq,scale:1,torsion:0};
+    setSleeveRadii: function () {
         this.axis.curveMesh.geometry.computeBoundingSphere();
         let axisRadius = this.axis.curveMesh.geometry.boundingSphere.radius * this.axis.curveMesh.scale.z;
         // set sleeve radius
@@ -178,8 +182,19 @@ KineticSculpture.prototype = Object.assign(Object.create(THREE.Object3D.prototyp
             this.unit.userData.sleeve.rInner /= 2;
             this.unit.userData.sleeve.thickness /= 2;
         }
+    },
 
+    buildSkeleton: function (dist=Infinity,freq=20) {
+
+        this.clearSkeleton();
+        this.clear();
+
+        // initialize an empty unit
+        this.unit = new Unit();
+        let params = {n:freq,scale:1,torsion:0};
+        
         // sample axis and arrange empty units
+        this.setSleeveRadii();
         this.axis.sample(params.n);
         this.layout(this.unit,params,true);
         
@@ -188,7 +203,7 @@ KineticSculpture.prototype = Object.assign(Object.create(THREE.Object3D.prototyp
         for (i=0;i<freq;i++) {
             let ends = samplingEnds[i];
             let unit = this.units.children[i];
-            // empty 
+            // empty
             if (ends.length == 0) {
                 unit.isEmpty = true;
                 continue;
@@ -224,7 +239,7 @@ KineticSculpture.prototype = Object.assign(Object.create(THREE.Object3D.prototyp
         // if(this.envelope.children.length>0) {
         //     this.generateEnvelope();
         // }
-        if(this.contours.children.length>0) {
+        if(this.outlines.children.length>0) {
             this.buildOutlines();
         }
     },
@@ -236,8 +251,8 @@ KineticSculpture.prototype = Object.assign(Object.create(THREE.Object3D.prototyp
             // must
             unit.updateMatrixWorld();
         }
-        // reset contours
-        if(this.contours.children.length>0) {
+        // reset outlines
+        if(this.outlines.children.length>0) {
             this.buildOutlines();
         }
     },
@@ -274,29 +289,33 @@ KineticSculpture.prototype = Object.assign(Object.create(THREE.Object3D.prototyp
                 for (let h=0.6*d;h<0.9*d;h+=0.015*d) {
                     u1.buildRod(theta,h);
                     u2.buildFork(theta,h);
+                    // u1 and u2 are fully connected, break the 2 for-loops
                     if (u1.rod.checkConnection(u2.fork)) {
                         // TODO: build mechanism later
-                        u1.rod.buildMechanism();
-                        u2.fork.buildMechanism();
+                        // u1.rod.buildMechanism();
+                        // u2.fork.buildMechanism();
                         connect = true;
                         break;
                     }
-                }  
+                }
                 if (connect) {
                     break;
                 }
             }
-            // separate
+
+            // exhausted the ranges, but u1 and u2 are still separated
             if (!connect) {
-                u1.clearRod();
-                u2.clearFork();
+                // clear all junctions
+                // u1.clearRod();
+                // u2.clearFork();
+                
                 if (highlight) {
-                    // highlight relating units and continue
+                    // if highlight units on infeasible segments, highlight them and go on
                     u1.setMaterial(highlightUnitMaterial);
                     u2.setMaterial(highlightUnitMaterial);
                     connectivity = false;
                 } else {
-                    // highlight is not needed, break the solving process
+                    // if highlight is not needed, break the solving process
                     connectivity = false;
                     break;
                 }
@@ -331,7 +350,10 @@ KineticSculpture.prototype = Object.assign(Object.create(THREE.Object3D.prototyp
     getMechanisms: function () {
         let r = [];
         for (u of this.units.children) {
-            r.push(...u.getMechanisms());
+            let mech = u.getMechanisms();
+            if (mech.length>0) {
+                r.push(...mech);
+            }
         }
         return r;
     },

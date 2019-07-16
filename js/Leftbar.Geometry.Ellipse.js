@@ -1,6 +1,6 @@
-Rightbar.Geometry.Ellipse = function ( sculptor, object ) {
+Leftbar.Geometry.Ellipse = function ( sculptor, object ) {
     var container = new UI.Row();
-    container.add(new UI.Text('Ellipse / Circle / Arc').setFontSize('18px').setWidth('100%'));
+    container.add(new UI.Text('Ellipse').setFontSize('18px').setWidth('100%'));
 	var parameters = object.parameters;
 
 	// center
@@ -25,10 +25,10 @@ Rightbar.Geometry.Ellipse = function ( sculptor, object ) {
     var anglesRow = new UI.Row();
     container.add( anglesRow );
     anglesRow.add( new UI.Text( 'Start angle' ) );
-    var startAngle = new UI.Number( parameters[4] ).setUnit('°').onChange( update );
+    var startAngle = new UI.Number( parameters[4] ).setUnit('°').setWidth('50px').onChange( update );
     anglesRow.add( startAngle );
     anglesRow.add( new UI.Text( 'End angle' ) );
-    var endAngle = new UI.Number( parameters[5] ).setUnit('°').onChange( update );
+    var endAngle = new UI.Number( parameters[5] ).setUnit('°').setWidth('50px').onChange( update );
     anglesRow.add( endAngle );
 
     // direction

@@ -373,11 +373,11 @@ function SweepBufferGeometry( shapes, options ) {
             
             // shape scale and rotation
             let controlVert = vert.clone();
-            if (scales) {
+            if (scales.length>0) {
                 controlVert.x = vert.x * scales[clipping].x;
                 controlVert.y = vert.y * scales[clipping].y;
             }
-            if (twists) {
+            if (twists.length>0) {
                 controlVert.rotateAround(new THREE.Vector2(),twists[clipping]);
             }
 
@@ -412,11 +412,11 @@ function SweepBufferGeometry( shapes, options ) {
                 
                 // shape scale and rotation
                 let controlVert = vert.clone();
-                if (scales) {
+                if (scales.length>0) {
                     controlVert.x = vert.x * scales[s].x;
                     controlVert.y = vert.y * scales[s].y;
                 }
-                if (twists) {
+                if (twists.length>0) {
                     controlVert.rotateAround(new THREE.Vector2(),twists[s]);
                 }
                 

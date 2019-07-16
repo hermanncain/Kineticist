@@ -5,27 +5,32 @@
  * @input {Sketch}[] sketches : spatiotemporal sketches
  * @input {Sketch} axis : sculpture axis
  * @input {int} number : unit number
+ * @input {KineticSculpture} sculpture: empty sculpture
  * @params
  * @components
  */
 class prototypeSolver {
-    constructor (sketchArray=[],axis=null) {
+    constructor (sketchArray=[],axis=null, n=10, unit=new Unit(), sculpture=new KineticSculpture()) {
 
         // Settings
         // how axis vary in iteration: shape, trans, both
+        this.outAxis = axis ? true : false;
         this.axisVariation = 'shape';
-        // if unit skeleton are fixed in XOY plane in UCS: default true
+        // if unit skeleton are fixed in XOY plane in UCS: default is true
         this.perpendicularSkeleton = true;
-        // max iteration: default 10000
+        // max iteration: default is 10000
         this.maxIter = 10000;
         // optimization method: GA, SA, PSO
         this.optMethod = 'SA';
-        // sleeve radius: default 0.2
-        this.r0 = 0.2;
-        // junction envelope segmentation: default 36
+        // sleeve radius: default is 0.2
+        // this.r0 = 0.2;
+        // junction envelope segmentation: default is 36
         this.radialSegments = 36;
-        // number of units: default 10
-        this.n = 20;
+        // number of units: default is 10
+        this.n = n;
+        
+        this.unit = unit;
+        this.sculpture = sculpture;
 
         // Input
         this.sketches = sketchArray;
@@ -61,7 +66,7 @@ class prototypeSolver {
         this.S = [];
         
         // prototype(s)
-        this.sculpture = null;
+        // this.sculpture = null;
         this.sculptures = [];
         
         // Energy
@@ -104,10 +109,35 @@ class prototypeSolver {
     //   initialize the sculpture axis as the input axis, or
     //   initialize the sculpture axis as a straight/circle spline
     initializeAxis (axis='line') {
+        this.getSketchesBox();
         if (axis instanceof Sketch) {
-            this.axis = axis;
+            this.setAxis(axis);
         } else {
+            this.outAxis = false;
             this.generateAxis(0,0.05,axis);
+        }
+        this.searchJunctionEnvelopes(this.n);
+    }
+    setAxis (axis) {
+        this.outAxis = true;
+        this.axis = axis;
+        this.sculpture.axis = axis;
+    }
+
+    // 1.3 solve feasible junction envelopes
+    searchJunctionEnvelopes () {
+        this.sculpture.setSleeveRadii();
+        this.axis.sample(this.n);
+        // force PTF to avoid referenced frame rotations
+        this.sculpture.layout(this.unit, {n:this.n,scale:1,torsion:0},true);
+        return this.sculpture.buildJoints();
+    }
+    // if no feasible envelopes, generate a new axis
+    searchAxisByJuncEnv () {
+        let got = false;
+        while (!got) {
+            this.generateAxis();
+            got = this.searchJunctionEnvelopes();
         }
     }
 
@@ -156,6 +186,10 @@ class prototypeSolver {
     // 2.1 search axis
     generateAxis (xExpandRatio=0,yExpandRatio=0.05,ini=false) {
 
+        // clear
+        if ((!this.outAxis) && this.axis) {
+            this.axis.dispose();
+        }
         // compute ranges
         let boundaryBox = this.sketchBox;
         let bMin = boundaryBox.min, bMax = boundaryBox.max;
@@ -176,11 +210,7 @@ class prototypeSolver {
             // TODO
         } else {
             // clear memory
-            this.axis.traverse(function(obj){
-                if (obj.geometry) {
-                    obj.geometry.dispose();
-                }
-            });
+            // this.axis.dispose();
             // randomly generate axis control points
             this.generateAxisControlPoints(xMin,xMax,yMin,yMax,xRange,yRange);
             while (this.checkBadAxis(minPtDist)) {
@@ -189,7 +219,8 @@ class prototypeSolver {
         }
 
         this.axis = new Sketch('spline',this.axisPoints);
-
+        this.axis.setRole('axis');
+        this.sculpture.axis = this.axis;
     }
     generateAxisControlPoints (xMin,xMax,yMin,yMax,xRange,yRange) {
         // clear
@@ -233,9 +264,9 @@ class prototypeSolver {
     }
 
     // 2.2 set unit emptiness
-    setUnitEmptiness () {
+    // setUnitEmptiness () {
         
-    }
+    // }
 
     // 2.2 search junctions envelopes
     searchFeasibleJunctionEnvelopes () {
@@ -602,7 +633,7 @@ class prototypeSolver {
         //     this.E_dissimilarity += this.getDissimilarity(sketch);
         // }
         // console.log(this.E_dissimilarity);
-        this.initializeJunctionEnvelopes();
+        // this.initializeJunctionEnvelopes();
         // this.computeCollisions();
         // console.log('collision: ', this.E_collision);
         // console.log('connection: ', this.E_connection)
