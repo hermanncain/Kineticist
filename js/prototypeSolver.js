@@ -10,23 +10,30 @@
  * @components
  */
 class prototypeSolver {
-    constructor (sketchArray=[],axis=null, n=10, unit=new Unit(), sculpture=new KineticSculpture()) {
+    constructor (sketchArray=[],axis=null, n=20, unit=new Unit(), sculpture=new KineticSculpture()) {
 
         // Settings
+        // if the axis is given
+        this.givenAxis = axis ? true : false;
+
+        this.Axisclosed = false;
+
         // how axis vary in iteration: shape, trans, both
-        this.outAxis = axis ? true : false;
         this.axisVariation = 'shape';
-        // if unit skeleton are fixed in XOY plane in UCS: default is true
+
+        // if unit skeleton are fixed in XOY plane in UCS
         this.perpendicularSkeleton = true;
-        // max iteration: default is 10000
+
+        // max iteration in solving
         this.maxIter = 10000;
         // optimization method: GA, SA, PSO
         this.optMethod = 'SA';
+
         // sleeve radius: default is 0.2
         // this.r0 = 0.2;
         // junction envelope segmentation: default is 36
         this.radialSegments = 36;
-        // number of units: default is 10
+        // number of units: default is 20
         this.n = n;
         
         this.unit = unit;
@@ -38,25 +45,29 @@ class prototypeSolver {
         
         // Searching parameters
         
-        // (A) axis: 2 x 6 + 3 = 15d
+        // (A)xis, 15d 
+        // a 2D spline with 6 control points in 3D space
+        // control points: (x,y) x 6
+        // base plane normal: (x,y,z)
         this.axisPoints2D = [];
         this.axisPlaneNormalRotation = new THREE.Euler(0,0,0);
         // this.axisPlaneDistance = 0;
 
-        // (J) junctions: 3(n-1)d
+        // (J)unctions, 2(n-1)d
+        // n-1 junction pairs, i.e., n-1 pairs of cone frustums
+        // theta: 45 deg fixed
+        // height: value * (n-1)
+        // phase: value * (n-1), fork's phase follows related rod's phase
         this.junctionEnvelopeHeights = [];
-        this.junctionEnvelopeAngles = [];
         this.junctionRodPhases = [];
         for (let i=0;i<this.n-1;i++) {
             this.junctionEnvelopeHeights.push(0.6);
-            this.junctionEnvelopeAngles.push(Math.PI/8);
             this.junctionRodPhases.push(0);
         }
         
         
         // Follower parameters of searching parameters
-        // releated with A
-        //  3d axis control points
+        //  3d axis control points computed from A
         this.axisPoints = [];
         //  axis' base plane
         this.axisPlane = new THREE.Plane(this.axisPlaneNormal, 0);// this.axisPlaneDistance);
@@ -96,7 +107,7 @@ class prototypeSolver {
 
     // 1. Initialization
     // 1.1 handle input sketches and get its AABB
-    getSketchesBox () {
+    getSketchesInfo () {
         let points = [];
         for (let sketch of this.sketches) {
             sketch.map(function(curve){
@@ -104,22 +115,24 @@ class prototypeSolver {
             });
         }
         this.sketchBox = new THREE.Box3().setFromPoints(points);
+        this.sketchSphere = new THREE.Sphere().setFromPoints(points);
     }
     // 1.2 handle input axis:
-    //   initialize the sculpture axis as the input axis, or
-    //   initialize the sculpture axis as a straight/circle spline
-    initializeAxis (axis='line') {
-        this.getSketchesBox();
-        if (axis instanceof Sketch) {
+    initializeAxis (axisClosed=false) {
+        this.getSketchesInfo();
+        if (this.axis) {
+            // initialize the sculpture axis as the input axis
             this.setAxis(axis);
         } else {
-            this.outAxis = false;
-            this.generateAxis(0,0.05,axis);
+            // initialize the sculpture axis as a straight/circle spline
+            this.givenAxis = false;
+            this.axisClosed = axisClosed;
+            this.generateAxis(true);
         }
-        this.searchJunctionEnvelopes(this.n);
+        this.searchJunctionEnvelopes();
     }
     setAxis (axis) {
-        this.outAxis = true;
+        this.givenAxis = true;
         this.axis = axis;
         this.sculpture.axis = axis;
     }
@@ -136,7 +149,7 @@ class prototypeSolver {
     searchAxisByJuncEnv () {
         let got = false;
         while (!got) {
-            this.generateAxis();
+            this.generateAxis(false);
             got = this.searchJunctionEnvelopes();
         }
     }
@@ -184,12 +197,28 @@ class prototypeSolver {
 
     // 2. Search
     // 2.1 search axis
-    generateAxis (xExpandRatio=0,yExpandRatio=0.05,ini=false) {
-
+    generateAxis (ini=false) {
+        if (this.givenAxis) {
+            return;
+        }
         // clear
-        if ((!this.outAxis) && this.axis) {
+        if (this.axis) {
             this.axis.dispose();
         }
+        this.axisPoints2D = [];
+        this.axisPoints = [];
+
+        if (this.axisClosed) {
+            this.axis = this.buildClosedAxis(ini);
+        } else {
+            this.axis = this.buildOpenAxis(ini);
+        }
+        this.sculpture.axis = this.axis;
+    }
+
+    buildOpenAxis (ini=false) {
+        let xExpandRatio = 0;
+        let yExpandRatio = 0.05;
         // compute ranges
         let boundaryBox = this.sketchBox;
         let bMin = boundaryBox.min, bMax = boundaryBox.max;
@@ -199,33 +228,20 @@ class prototypeSolver {
         let yMax = bMax.y + (bMax.y-bMin.y)*yExpandRatio;
         let xRange = xMax-xMin, yRange = yMax-yMin;
         let minPtDist = Math.min(xRange,yRange)/10;
-
-        // handle the given axis type
-        if (ini=='line') {
+        if (ini) {
             for (let i=0;i<6;i++) {
                 this.axisPoints2D.push(new THREE.Vector3(xMin+xRange/2,yMin+yRange/5*i,0));
                 this.axisPoints.push(new THREE.Vector3(xMin+xRange/2,yMin+yRange/5*i,0));
             }
-        } else if (ini == 'circle') {
-            // TODO
         } else {
-            // clear memory
-            // this.axis.dispose();
-            // randomly generate axis control points
-            this.generateAxisControlPoints(xMin,xMax,yMin,yMax,xRange,yRange);
+            this.generateOpenAxisControlPoints(xMin,xMax,yMin,yMax,xRange,yRange);
             while (this.checkBadAxis(minPtDist)) {
-                this.generateAxisControlPoints(xMin,xMax,yMin,yMax,xRange,yRange);
+                this.generateOpenAxisControlPoints(xMin,xMax,yMin,yMax,xRange,yRange);
             }
         }
-
-        this.axis = new Sketch('spline',this.axisPoints);
-        this.axis.setRole('axis');
-        this.sculpture.axis = this.axis;
+        return new Sketch('spline',this.axisPoints,undefined,'axis',false);
     }
-    generateAxisControlPoints (xMin,xMax,yMin,yMax,xRange,yRange) {
-        // clear
-        this.axisPoints2D = [];
-        this.axisPoints = [];
+    generateOpenAxisControlPoints (xMin,xMax,yMin,yMax,xRange,yRange) {
         // randomly sample 2d control points
         let xs = sample(xMin,xMax,6);
         let ys = sample(yMin,yMax,4);
@@ -235,6 +251,9 @@ class prototypeSolver {
         for (let i=0;i<6;i++) {
             this.axisPoints2D.push(new THREE.Vector3(xs[i],ys[i],0));
         }
+        this.mapPointsOnPlane();
+    }
+    mapPointsOnPlane () {
         // randomly generate a base plane 
         let normal = new THREE.Vector3(0,0,1);
         this.axisPlaneNormalRotation = new THREE.Euler((1-2*Math.random())*Math.PI/6,(1-2*Math.random())*Math.PI/6,0);
@@ -244,6 +263,34 @@ class prototypeSolver {
         // get 3d control points
         this.axisPoints = pointsToPlane(this.axisPoints2D,this.axisPlane);
     }
+    
+    buildClosedAxis (ini=false) {
+        // compute ranges
+        let radius = this.sketchSphere.radius;
+        let center = this.sketchSphere.center;
+        if (ini) {
+            let r = 0.8*radius;
+            for (let i=0;i<6;i++) {
+                let x = center.x + r * Math.cos(Math.PI/3*i);
+                let y = center.y + r * Math.sin(Math.PI/3*i);
+                let p = new THREE.Vector3(x,y,0);
+                this.axisPoints2D.push(p);
+                this.axisPoints.push(p.clone());
+            }
+        } else {
+            for (let i=0;i<6;i++) {
+                let randomRadius = (0.4*Math.random() + 0.6)*radius;
+                let x = center.x + randomRadius * Math.cos(Math.PI/3*(i + Math.random()-0.5));
+                let y = center.y + randomRadius * Math.sin(Math.PI/3*(i + Math.random()-0.5));
+                let p = new THREE.Vector3(x,y,0);
+                this.axisPoints2D.push(p);
+                this.mapPointsOnPlane();
+            }
+        }
+        return new Sketch('spline',this.axisPoints,undefined,'axis',true);
+    }
+
+
     checkBadAxis (distMin=0,angleMax=Math.PI/4) {
         for (let i=1;i<6;i++) {
             let p2 = this.axisPoints[i];
@@ -284,9 +331,8 @@ class prototypeSolver {
                 continue;
             }
             this.junctionEnvelopeHeights[i] = 0.6+Math.random() * 0.3;
-            this.junctionEnvelopeAngles[i] = Math.PI/4 + Math.random() * Math.PI/12;
             let h = u1.position.distanceTo(u2.position) * this.junctionEnvelopeHeights[i];
-            let r = h*Math.tan(this.junctionEnvelopeAngles[i])+this.r0;
+            let r = h+this.r0;
             let rod = new Junction('Rod',this.r0,r,h,this.radialSegments);
             u1.rod = rod;
             u1.transmissions.add(rod);
@@ -623,7 +669,7 @@ class prototypeSolver {
     }
 
     solve (method='SA') {
-        this.getSketchesBox();
+        this.getSketchesInfo();
         this.initializeAxis();
         // this.initializeUnitEnvelopes();
         // this.getObjectiveContours();

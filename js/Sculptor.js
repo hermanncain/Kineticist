@@ -281,14 +281,12 @@ class Sculptor {
     solveSkeletons (n) {
         let STSketches = [];
         this.sculpture.sketches.map(function(c){
-            console.log(c,STSketches[c.timeOrder-1])
             if (STSketches[c.timeOrder-1] === undefined) {
                 STSketches[c.timeOrder-1] = [c];
             } else {
                 STSketches[c.timeOrder-1].push(c);
             }
         });
-        console.log(STSketches)
         let M = STSketches[0].length;
         for (let sketch of STSketches) {
             if (M!=sketch.length) {
@@ -298,7 +296,7 @@ class Sculptor {
         }
         this.unit.dispose();
         this.solver = new prototypeSolver(STSketches,null,n,this.unit,this.sculpture);
-        this.solver.initializeAxis();
+        this.solver.initializeAxis(true);
         this.axis = this.solver.axis;
         this.scenes.layoutScene.add(this.axis);
     }
@@ -306,9 +304,9 @@ class Sculptor {
     testAxisGen (n) {
         this.solver.n = n;
         this.scenes.layoutScene.remove(this.solver.axis);
+        this.solver.generateAxis(false);
+        // this.solver.searchJunctionEnvelopes();
         this.solver.searchAxisByJuncEnv();
-        // this.solver.generateAxis();
-        // this.solver.searchJunctionEnvelopes(n);
         this.axis = this.solver.axis;
         this.scenes.layoutScene.add(this.axis);
     }

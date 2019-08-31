@@ -27,7 +27,7 @@ Rightbar.Mechanism = function (sculptor) {
     roleRow.add( makeContourButton );
 
     var roles = [makeSketchButton,makeAxisButton,makeContourButton];
-    curveRoleRow.add( new UI.HorizontalRule() );
+    // curveRoleRow.add( new UI.HorizontalRule() );
 
 
     // time orders
@@ -55,47 +55,47 @@ Rightbar.Mechanism = function (sculptor) {
     }
     
 
-    timeOrderRow.add( new UI.HorizontalRule() );
+    // timeOrderRow.add( new UI.HorizontalRule() );
 
     // prototype
-    var prototypeRow = new UI.Row();
-    prototypeRow.setDisplay('none');
-    container.add(prototypeRow);
-    prototypeRow.add(new UI.Text('Prototype').setFontSize('20px').setWidth('100%'));
+    var skeletonRow = new UI.Row();
+    skeletonRow.setDisplay('none');
+    container.add(skeletonRow);
+    skeletonRow.add(new UI.Text('Skeleton').setFontSize('20px').setWidth('100%'));
 
     // sampling frequency
     var samplingFrequencyRow = new UI.Row().setMargin('10px');
-    prototypeRow.add( samplingFrequencyRow );
+    skeletonRow.add( samplingFrequencyRow );
 
-    samplingFrequencyRow.add( new UI.Text( 'Density' ).setWidth( '100px' ) );
+    samplingFrequencyRow.add( new UI.Text( 'density' ).setWidth( '100px' ) );
     var samplingFrequency = new UI.Integer( 20 )
     samplingFrequencyRow.add( samplingFrequency );
 
     // generation distance
     var generationDistanceRow = new UI.Row().setMargin('10px');
-    prototypeRow.add( generationDistanceRow );
+    skeletonRow.add( generationDistanceRow );
 
-    generationDistanceRow.add( new UI.Text( 'Distance' ).setWidth( '100px' ) );
+    generationDistanceRow.add( new UI.Text( 'distance' ).setWidth( '100px' ) );
     var generationDistance = new UI.Number( 8 )
     generationDistanceRow.add( generationDistance );
 
     // generation yaw
     var yawRow = new UI.Row().setMargin('10px');
-    prototypeRow.add( yawRow );
+    skeletonRow.add( yawRow );
 
-    yawRow.add( new UI.Text( 'Direction' ).setWidth( '100px' ) );
+    yawRow.add( new UI.Text( 'direction' ).setWidth( '100px' ) );
     var yaw = new UI.Number( 0 ).setUnit( '°' )
     yawRow.add( yaw );
 
     // prototyping with sketches without time order
-    var singleRow = new UI.Row();
-    prototypeRow.add(singleRow);
+    // var singleRow = new UI.Row();
+    // skeletonRow.add(singleRow);
 
     // generate a prototype
     var generateSkeletonButton = new UI.Button().setId('skeleton').onClick(function () {
         sculptor.sculpture.buildSkeleton(generationDistance.getValue(),samplingFrequency.getValue());
     });
-    singleRow.add( generateSkeletonButton );
+    skeletonRow.add( generateSkeletonButton );
 
     // TODO
     // generate meshes
@@ -110,39 +110,55 @@ Rightbar.Mechanism = function (sculptor) {
     var clearSkeleton = new UI.Button().setId('clear-skeleton').onClick(function(){
         sculptor.sculpture.clearSkeleton();
     });
-    singleRow.add( clearSkeleton );
+    skeletonRow.add( clearSkeleton );
 
     
     // prototyping with ordered sketches
-    var multiRow = new UI.Row();
-    prototypeRow.add(multiRow);
+    var prototypeRow = new UI.Row();
+    prototypeRow.setDisplay('none');
+    prototypeRow.add(new UI.Text('Prototype').setFontSize('20px').setWidth('100%'));
+    container.add(prototypeRow);
     
     // axis type
-    multiRow.add(new UI.Text('axis type: ').setMargin('10px'));
+    prototypeRow.add(new UI.Text('axis type: ').setMargin('10px'));
     var axisType = new UI.Select();
-    multiRow.add(axisType);
+    prototypeRow.add(axisType);
     axisType.setMultiple = false;
     axisType.setOptions(['closed','open']);
     axisType.setValue(0);
+
+    // paramters to vary
+    prototypeRow.add(new UI.Text('axis variables:').setMargin('10px').setWidth('100%'));
+    prototypeRow.add(new UI.Text('shape').setMargin('10px'));
+    var varyShape = new UI.Checkbox(true);
+    prototypeRow.add(varyShape);
+    prototypeRow.add(new UI.Text('trans').setMargin('10px'));
+    var varyTrans = new UI.Checkbox(false);
+    prototypeRow.add(varyTrans);
+
+    // unit envelope height
+    prototypeRow.add(new UI.Text('unit z-thickness').setMargin('10px'));
+    var unitEnvHeight = new UI.Number().setWidth('40px').setMarginTop('0');
+    prototypeRow.add(unitEnvHeight);
 
     // solve prototype
     var solveSkeletons = new UI.Button('solve').onClick(function(){
         sculptor.solveSkeletons(samplingFrequency.getValue(),axisType.getValue());
     });
-    multiRow.add(solveSkeletons);
+    prototypeRow.add(solveSkeletons);
 
     // test axis generation
     var testAxisGen = new UI.Button('new').onClick(function(){
         sculptor.testAxisGen(samplingFrequency.getValue(),axisType.getValue());
     });
-    multiRow.add(testAxisGen);
+    prototypeRow.add(testAxisGen);
 
     // var testJunctionEnv = new UI.Button('junc env').onClick(function(){
     //     // sculptor.testJunction(samplingFrequency.getValue());
     // });
-    // multiRow.add(testJunctionEnv);
+    // prototypeRow.add(testJunctionEnv);
 
-    prototypeRow.add( new UI.HorizontalRule() );
+    // skeletonRow.add( new UI.HorizontalRule() );
 
 
     // outlines
@@ -202,13 +218,17 @@ Rightbar.Mechanism = function (sculptor) {
     }
 
     function updateUI (object) {
-        if (object.role == 'axis') {
-            prototypeRow.setDisplay('');
-            timeOrderRow.setDisplay('none');
-        } else if (object.role == 'reference') {
-            prototypeRow.setDisplay('none');
-        } else {
-            prototypeRow.setDisplay('none');
+        if (!object) {
+            if (sculptor.axis) {
+                skeletonRow.setDisplay('');
+                prototypeRow.setDisplay('none');
+            } else {
+                prototypeRow.setDisplay('');
+                skeletonRow.setDisplay('none');
+            }
+        } else if (object.role == 'axis') {
+            skeletonRow.setDisplay('');
+            timeOrderRow.setDisplay('');
         }
     }
 
@@ -218,23 +238,29 @@ Rightbar.Mechanism = function (sculptor) {
             updateOrderUI(obj.timeOrder);
             container.setDisplay( '' );
             sketch = obj;
-		    updateUI( obj );
+            console.log(sculptor.currentScene.name)
+            if (sculptor.currentScene.name == 'layoutScene') {
+                updateUI( obj );
+            } else {
+                prototypeRow.setDisplay('none');
+                skeletonRow.setDisplay('none');
+                outLineRow.setDisplay('none');
+            }
         } else {
             container.setDisplay( 'none' );
         }
-    })
+    });
 
     signals.sceneChanged.add(function(name){
         if (name == 'layoutScene') {
             curveRoleRow.setDisplay('none');
             timeOrderRow.setDisplay('none');
-            prototypeRow.setDisplay('');
             outLineRow.setDisplay('');
+            updateUI();
         } else {
             curveRoleRow.setDisplay('');
             timeOrderRow.setDisplay('');
-            prototypeRow.setDisplay('none');
-            outLineRow.setDisplay('none');
+            updateUI();
         }
     });
     

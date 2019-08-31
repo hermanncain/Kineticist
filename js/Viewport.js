@@ -551,9 +551,6 @@ var Viewport = function (sculptor) {
 			if (sculptor.axis) {
 				castObjects.push(sculptor.axis);
 			}
-			if (sculptor.sculpture.sketches.length>0) {
-				castObjects.push(...sculptor.sculpture.sketches);
-			}
 			sceneHelpers.children[0].visible = true;
 		} else if (name =='layoutScene') {
 			// transfer sketches

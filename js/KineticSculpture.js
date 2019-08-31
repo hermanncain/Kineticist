@@ -227,18 +227,11 @@ KineticSculpture.prototype = Object.assign(Object.create(THREE.Object3D.prototyp
     },
 
     simulateMotion: function () {
-        // rotate skeleton
-        // for(bone of this.skeletons){
-        //     bone.simulate();
-        // }
         // rotate units
         for(unit of this.units.children) {
             unit.rotateZ(0.01);
         }
-        // rotate envelope
-        // if(this.envelope.children.length>0) {
-        //     this.generateEnvelope();
-        // }
+        // update outlines
         if(this.outlines.children.length>0) {
             this.buildOutlines();
         }
