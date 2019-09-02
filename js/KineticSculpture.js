@@ -135,6 +135,14 @@ KineticSculpture.prototype = Object.assign(Object.create(THREE.Object3D.prototyp
 
     // Outline
     // draw spline outlines passing through unit ends
+    computeOutlines: function () {
+        let n = this.units.children.length;
+        for (let u of this.units.children) {
+            
+        }
+
+    },
+
     buildOutlines: function () {
         this.clearOutlines();
 
@@ -285,8 +293,8 @@ KineticSculpture.prototype = Object.assign(Object.create(THREE.Object3D.prototyp
                     // u1 and u2 are fully connected, break the 2 for-loops
                     if (u1.rod.checkConnection(u2.fork)) {
                         // TODO: build mechanism later
-                        // u1.rod.buildMechanism();
-                        // u2.fork.buildMechanism();
+                        u1.rod.buildMechanism();
+                        u2.fork.buildMechanism();
                         connect = true;
                         break;
                     }

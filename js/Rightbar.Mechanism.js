@@ -127,7 +127,7 @@ Rightbar.Mechanism = function (sculptor) {
     axisType.setOptions(['closed','open']);
     axisType.setValue(0);
 
-    // paramters to vary
+    // parameters to vary
     prototypeRow.add(new UI.Text('axis variables:').setMargin('10px').setWidth('100%'));
     prototypeRow.add(new UI.Text('shape').setMargin('10px'));
     var varyShape = new UI.Checkbox(true);

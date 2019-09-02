@@ -121,6 +121,9 @@ Leftbar.Layout = function (sculptor) {
     var genMech = new UI.Button('solve transmissions').onClick(generateMechanism);
     container.add(genMech);
 
+    var genUnits = new UI.Button('generate units').onClick(generateUnits);
+    container.add(genUnits);
+
     function generateLayout(){
         let params = {
             n: gNumber.getValue(),
@@ -147,6 +150,20 @@ Leftbar.Layout = function (sculptor) {
         } else {
             signals.infoChanged.dispatch('Failed, please modify axis shape near highlighted units, or densify units');
         }
+    }
+
+    function generateUnits () {
+        let sculpture = sculptor.sculpture;
+        for (let u of sculpture.units.children) {
+            u.userData.decs.has = true;
+            u.userData.decs.positions = [1];
+            u.userData.decs.scales = [0.5];
+            u.userData.decs.shapes = ['0'];
+            u.userData.blade.a = 0.05;
+            u.userData.blade.b = 0.05;
+            u.generateShape();
+        }
+        sculpture.buildAxis();
     }
 
     // get scale factor based on unit size and axis k

@@ -44,11 +44,11 @@ function Unit (shape='propeller') {
         },
 
         decs: {
-            shape: 0,
             has: false,
             positions:[],
             scales:[],
             rotations:[],
+            shapes: [],
         },
 
         sleeve: {
