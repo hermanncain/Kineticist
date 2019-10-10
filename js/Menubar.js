@@ -2,7 +2,7 @@
  * @author hermanncain
  */
 
-var Topbar = function ( sculptor ) {
+var Menubar = function ( sculptor ) {
 
 	var NUMBER_PRECISION = 6;
 
@@ -15,7 +15,7 @@ var Topbar = function ( sculptor ) {
 	signals = sculptor.signals;
 
 	var container = new UI.Panel();
-	container.setId( 'topbar' );
+	container.setId( 'menubar' );
 
 	// TODO: replace text with logo
 	var title = new UI.Text('Cycler').setWidth('100px').setFontSize('40px')
@@ -24,14 +24,15 @@ var Topbar = function ( sculptor ) {
     title.dom.style.fontFamily='Impact';
     container.add(title);
 
-
 	// file operations
 	var fileRow = new UI.Row();
 	container.add( fileRow );
 
 	// create a new kinetic sculpture design
 	var newKS = new UI.Button().setId('new').onClick(function(){
-
+		if (alert('start a new project, while unsaved work will be lost, still continue?')) {
+			sculptor.clear();
+		}
 	});
 	newKS.dom.title = 'new';
 	fileRow.add( newKS );
@@ -78,14 +79,7 @@ var Topbar = function ( sculptor ) {
 	openKS.dom.title = 'open';
 	fileRow.add( openKS );
 
-	// save/download a kinetic sculpture
-	// download dom
-	var link = document.createElement( 'a' );
-	function save( blob, filename ) {
-		link.href = URL.createObjectURL( blob );
-		link.download = filename || 'data.json';
-		link.dispatchEvent( new MouseEvent( 'click' ) );
-	}
+	// save/download a kinetic sculpture project
 	var saveKS = new UI.Button().setId('save').onClick(function(){
 		console.log(sculptor.currentScene.name)
 		// save unit
@@ -109,13 +103,6 @@ var Topbar = function ( sculptor ) {
 	saveKS.dom.title = 'save';
 	fileRow.add( saveKS );
 
-	function saveString( text, filename ) {
-
-		save( new Blob( [ text ], { type: 'text/plain' } ), filename );
-
-	}
-
-
 	// building operations
 	var buildRow = new UI.Row();
 	container.add(buildRow);
@@ -132,7 +119,6 @@ var Topbar = function ( sculptor ) {
             buildButtons.push(bt);
 		}
 	})();
-
 
 	// simulation operations
 	var controlRow = new UI.Row();
@@ -155,9 +141,6 @@ var Topbar = function ( sculptor ) {
 		sculptor.isPlay = false;
 		play.setId('play');
 		sculptor.sculpture.reset();
-		// for (uuid in sculptor.sculptures) {
-		// 	sculptor.sculptures[uuid].reset();
-		// }
 	});
 	controlRow.add(reset);
 
@@ -230,8 +213,8 @@ var Topbar = function ( sculptor ) {
 	transformRow.add(worldTransform);
 
 	// duplicate
-	var duplicate = new UI.Button().setId('duplicate').onClick(function () {});
-	transformRow.add(duplicate);
+	// var duplicate = new UI.Button().setId('duplicate').onClick(function () {});
+	// transformRow.add(duplicate);
 
 	// remove
 	var remove = new UI.Button().setId('remove').onClick(function () {
@@ -241,10 +224,11 @@ var Topbar = function ( sculptor ) {
 
 
 	// get help on github
-	var github = new UI.Button().setId('github').setPosition('absolute').setRight('20px').onClick(function(){
-		window.open('https://github.com/hermanncain/Cycler');
-	});
-	container.add( github );
+	// disable for review
+	// var github = new UI.Button().setId('github').setPosition('absolute').setRight('20px').onClick(function(){
+	// 	window.open('https://github.com/hermanncain/Cycler');
+	// });
+	// container.add( github );
 
 	// for download
 	var link = document.createElement( 'a' );
@@ -259,23 +243,25 @@ var Topbar = function ( sculptor ) {
 				return;
 			}
 			if (sculptor.axis==null) {
-				let allOrdered = sculptor.sketches.reduce(function(a,b){
-					return a.timeOrder || b.timeOrder;
-				});
-				let allUnordered = sculptor.sketches.reduce(function(a,b){
-					return a.timeOrder && b.timeOrder;
-				});
-				// if all sketches are time-ordered, keep null axis
-				// else set sketch[0] as axis
-				// then make all sketches 0 ordered
-				// and attach them to the sculpture as contours
-				if (!(allOrdered && allUnordered)) {
-					sculptor.setRole(sculptor.sketches[0],'axis');
-					for (let i=1;i<sculptor.sketches.length;i++) {
-						sculptor.setRole(sculptor.sketches[i],'contour');
-						sculptor.sketches[i].setTimeOrder(0);
-					}
-				}
+				// noted for review
+				// let allOrdered = sculptor.sketches.reduce(function(a,b){
+				// 	return a.timeOrder || b.timeOrder;
+				// });
+				// let allUnordered = sculptor.sketches.reduce(function(a,b){
+				// 	return a.timeOrder && b.timeOrder;
+				// });
+				// // if all sketches are time-ordered, keep null axis
+				// // else set sketch[0] as axis
+				// // then make all sketches 0 ordered
+				// // and attach them to the sculpture as contours
+				// if (!(allOrdered && allUnordered)) {
+				// 	sculptor.setRole(sculptor.sketches[0],'axis');
+				// 	for (let i=1;i<sculptor.sketches.length;i++) {
+				// 		sculptor.setRole(sculptor.sketches[i],'contour');
+				// 		sculptor.sketches[i].setTimeOrder(0);
+				// 	}
+				// }
+				sculptor.setRole(sculptor.sketches[0],'axis');
 			}
 		}
 		for (let b of buildButtons) {
@@ -319,7 +305,7 @@ var Topbar = function ( sculptor ) {
 	});
 
 	signals.objectSelected.add(function(object){
-		if (!object) {
+		if (!object || object instanceof Unit) {
 			transformRow.setDisplay('none');
 			return;
 		} else {
@@ -336,7 +322,16 @@ var Topbar = function ( sculptor ) {
 			scale.setDisplay('');
 			remove.setDisplay('');
 		}
-	})
+	});
+
+	// motion simulation buttons are visible only in the layout scene
+	signals.sceneChanged.add(function(name){
+		if (name == 'layoutScene') {
+			controlRow.setDisplay('');
+		} else {
+			controlRow.setDisplay('none');
+		}
+	});
 
 	// initialize
 	selectMode(sculptor.currentScene.name);

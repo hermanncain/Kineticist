@@ -3,7 +3,13 @@
 	<head>
 		<title>Kinetic Sculptor</title>
 		<meta charset="utf-8">
-		<link href="css/light.css" rel="stylesheet" />
+		<link href="css/main.css" rel="stylesheet" />
+		<link href="css/menubar.css" rel="stylesheet" />
+		<link href="css/leftbar.css" rel="stylesheet" />
+		<link href="css/leftbar.unit.css" rel="stylesheet" />
+		<link href="css/leftbar.sketch.css" rel="stylesheet" />
+		<link href="css/leftbar.layout.css" rel="stylesheet" />
+		<link href="css/rightbar.css" rel="stylesheet" />
 		<script src="build/three.js"></script>
 		<script src="build/TrackballControls.js"></script>
 		<script src="build/TransformControls.js"></script>
@@ -11,6 +17,7 @@
 		<script src="build/stats.min.js"></script>
 		<script src="build/SweepBufferGeometry.js"></script>
 		<script src="build/ui.js"></script>
+		<script src="build/STLExporter.js"></script>
 		<!--core graphics-->
 		<script src="js/globals.js"></script>
 		<script src="js/CurveLib.js"></script>
@@ -24,7 +31,7 @@
 		<script src="js/prototypeSolver.js"></script>
 		<!--system and ui-->
 		<script src="js/Sculptor.js"></script>
-		<script src="js/Topbar.js"></script>
+		<script src="js/Menubar.js"></script>
 		<script src="js/Viewport.js"></script>
 		<script src="js/Leftbar.js"></script>
 		<script src="js/Leftbar.Unit.js"></script>
@@ -39,7 +46,7 @@
 		<script src="js/Leftbar.Geometry.TorusKnot.js"></script>
 		<script src="js/Leftbar.Geometry.DecoratedTorusKnot.js"></script>
 		<script src="js/Leftbar.Layout.js"></script>
-		<script src="js/Leftbar.MorphTransforms.js"></script>
+		<script src="js/Leftbar.Morphs.js"></script>
 		<script src="js/Rightbar.js"></script>
 		<script src="js/Rightbar.Scene.js"></script>
 		<script src="js/Rightbar.Mechanism.js"></script>
@@ -48,12 +55,16 @@
 	</head>
 	<body>
 		<script>
+			// for downloading
+			var link = document.createElement( 'a' );
+			link.style.display = 'none';
+			document.body.appendChild( link );
 			
 			// Core components
 			var sculptor = new Sculptor();
 
-			var topbar = new Topbar(sculptor);
-			document.body.appendChild( topbar.dom );
+			var menubar = new Menubar(sculptor);
+			document.body.appendChild( menubar.dom );
 
 			// viewport
 			var viewport = new Viewport(sculptor);

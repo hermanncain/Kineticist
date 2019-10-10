@@ -89,10 +89,11 @@ class Sculptor {
         this.scenes.sketchScene.name = 'sketchScene';
         this.scenes.layoutScene = this.scene.clone();
         this.scenes.layoutScene.name = 'layoutScene';
-        this.currentScene = this.scenes.sketchScene;        
+        this.currentScene = this.scenes.unitScene;        
 
         this.currentMaterial = grayMaterial;
         this.showKeys = false;
+        this.currentMorph = '';
 
         // 2.2 drawing modes
         this.drawMode = 'normal';
@@ -106,6 +107,7 @@ class Sculptor {
         // this.selectedSketch = null;
         // this.selectedSculpture = null;
         this.selectedGroup = [];
+        this.selectedObjects = [];
 
         // 2.5 singletons: unit, axis and sculpture
         this.unit = new Unit();
@@ -129,53 +131,91 @@ class Sculptor {
         this.isPlay = false;
     }
 
-    select (object) {
+    select (object,multi=false) {
 
-        // select the same object
-        if ( this.selected === object ) return;
-
-        // handle previous selected object
-        if (this.selected != null) {
-            // deselect
-            if(this.selected instanceof Sketch || this.selected instanceof Rib) {
-                this.selected.deselect();
-            } else if (this.selected.name == 'ribpoint') {
-                this.selected.material.color.setHex(0x0000ff);
-            } else if (this.selected.name == 'control point') {
-                this.selected.material.color.setHex(0x0000ff);
-                this.selected.material.color.copy(this.selected.parent.material.color);
-            } else if (this.selected instanceof Unit) {
-                if (this.showKeys) {
-                    let isKey = false;
-                    for (let key in this.unitMorphKeys) {
-                        if (this.unitMorphKeys[key].indexOf(this.selected)>-1) {
-                            isKey = true;
-                            break;
-                        }
-                    }
-                    if (isKey) {
-                        this.selected.setMaterial(labeledMaterial);
-                    } else {
-                        this.selected.setMaterial(this.currentMaterial);
-                    }
-                } else {
-                    this.selected.setMaterial(this.currentMaterial);
+        // multi-select / single select
+        if (multi) {
+            // has selected in multi-selection, remove
+            if ( this.selectedObjects.indexOf(object)>-1 ) {
+                this.unselect(object);
+                this.selectedObjects.splice(this.selectedObjects.indexOf(object),1);
+            } else {
+                if (object instanceof Rib) {
+                    this.selectedObjects.push(object);
+                    this.selected = object;
+                    this.selected.select();
                 }
             }
+        } else {
+            // select the same object
+            if ( this.selected === object ) {
+                if (this.selectedObjects.length>0) {
+                    this.multiUnselect();
+                } else {
+                    return;
+                }
+            }
+            // unselect previous selected
+            if (this.selected != null) {
+                this.unselect(this.selected);
+            }
+            if (this.selectedObjects.length>0) {
+                this.multiUnselect();
+            }
+            this.selected = object;
+            if (object != null) {
+                if (this.selected instanceof Sketch || this.selected instanceof Rib) {
+                    this.selected.select();
+                } else if (this.selected instanceof Unit) {
+                    if (this.currentMorph=='') {
+                        this.selected = null;
+                    } else {
+                        this.selected.setMaterial(selectedMaterial);
+                    }
+                }
+            } else {
+                this.multiUnselect();
+            }
         }
 
-        // handle current selecting object
-        if (object != null) {
-            this.selected = object;
-            if (this.selected instanceof Sketch || this.selected instanceof Rib) {
-                this.selected.select();
-            } else if (this.selected instanceof Unit) {
-                this.selected.setMaterial(selectedMaterial);
-            }
-        } else {
-            this.selected = object;
-        }
 		this.signals.objectSelected.dispatch( this.selected );
+    }
+
+    unselect(object) {
+        if (object == null) return;
+
+        if(object instanceof Sketch || object instanceof Rib) {
+            object.deselect();
+        } else if (object.name == 'ribpoint') {
+            object.material.color.setHex(0x0000ff);
+        } else if (object.name == 'control point') {
+            object.material.color.setHex(0x0000ff);
+            object.material.color.copy(object.parent.material.color);
+        } else if (object instanceof Unit) {
+            if (this.showKeys) {
+                let isKey = false;
+                for (let key in this.unitMorphKeys) {
+                    if (this.unitMorphKeys[key].indexOf(object)>-1) {
+                        isKey = true;
+                        break;
+                    }
+                }
+                if (isKey) {
+                    object.setMaterial(labeledMaterial);
+                } else {
+                    object.setMaterial(this.currentMaterial);
+                }
+            } else {
+                object.setMaterial(this.currentMaterial);
+            }
+        }
+    }
+
+    multiUnselect() {
+        for (let obj of this.selectedObjects) {
+            this.unselect(obj);
+        }
+        this.selectedObjects = [];
     }
 
     deselect () {

@@ -1,0 +1,67 @@
+/*
+ * unit scene
+ */
+
+.param-semantics {
+    font-size:16px;
+	margin:5px;
+	width:100px;
+}
+#leftbar-unit .Integer {
+	width:40px;
+}
+#leftbar-unit .Number {
+	width:40px;
+}
+
+/* draw skeletons */
+#add-end {
+    background-image: url(icons/leftbar/add-end.svg);
+}
+#ca {
+    background-image: url(icons/leftbar/ca.svg);
+}
+#gca {
+    height:30px !important;
+    width:30px !important;
+    background-image: url(icons/leftbar/checked.svg);
+}
+#cca {
+    height:30px !important;
+    width:30px !important;
+    background-image: url(icons/leftbar/forbidden.svg);
+}
+#select-all {
+    background-image: url(icons/leftbar/select-all.svg);
+}
+#polygon {
+    background-image: url(icons/leftbar/polygon.svg);
+}
+/* accessory config */
+#add-acc {
+    height:25px !important;
+    width:25px !important;
+    background-image:url(icons/leftbar/add-acc.svg);
+}
+/* unit mesh */
+#gen {
+    background-image: url(icons/leftbar/automation.svg);
+}
+#clear {
+    background-image: url(icons/leftbar/clear.svg);
+}
+#import-unit {
+    background-image: url(icons/menubar/open.svg);
+}
+
+#leftbar-unit-semantic .Text{
+	width: 96px;
+	font-size: 16px;
+	margin-top:5px;
+	margin-bottom:5px;
+}
+#leftbar-unit-blade .Text{
+	font-size: 16px;
+	margin-top:5px;
+	margin-bottom:5px;
+}

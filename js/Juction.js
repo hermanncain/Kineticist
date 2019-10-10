@@ -6,6 +6,7 @@ function JunctionHelper( type='Rod', length = 1 ) {
     lineGeometry.addAttribute( 'position', new THREE.Float32BufferAttribute( [ 0, 0, 0, 0, 0, 1 ], 3 ) );
     this.line = new THREE.Line( lineGeometry, junctionHelperMaterials[type] );
     this.line.matrixAutoUpdate = false;
+    this.line.layers.set(3);
     this.add( this.line );
 
     this.setLength( length );
@@ -30,7 +31,7 @@ JunctionHelper.prototype.setLength = function ( length ) {
 
 JunctionHelper.prototype.copy = function ( source ) {
 
-    Object3D.prototype.copy.call( this, source, false );
+    THREE.Object3D.prototype.copy.call( this, source, false );
 
     this.line.copy( source.line );
 
@@ -84,22 +85,28 @@ Junction.prototype = Object.assign(Object.create(THREE.Object3D.prototype), {
     constructor: Junction,
 
     clone: function () {
+        // new junction will initialize, so an envelope has
+        // already existed in the new junction
         let junction = new Junction(this.type,this.theta,this.h,this.phase,this.rSleeve,this.seg);
-        // save time, copy children directly instead of regeneration
-        junction.envelope = this.envelope.clone();
-        junction.skelelton = this.skelelton.clone();
-        junction.mechanism = this.mechanism.clone();
-        junction.add(junction.envelope);
-        junction.add(junction.skelelton);
-        junction.add(junction.mechanism);
+        if (this.skeleton) {
+            junction.skeleton = this.skeleton.clone();
+            junction.skeleton.applyMatrix(this.skeleton.matrix);
+            junction.add(junction.skeleton);
+        }
+        if (this.mechanism) {
+            junction.mechanism = this.mechanism.clone();
+            junction.mechanism.applyMatrix(this.mechanism.matrix);
+            junction.add(junction.mechanism);
+        }
+        junction.applyMatrix(this.matrix);
         return junction;
     },
 
     // clear envelope, skeleton and mechanism
     dispose: function () {
         if (this.envelope) {
-            this.envelope.geometry.dispose();
             this.remove(this.envelope);
+            this.envelope.geometry.dispose();
         }
         this.clear();
     },
@@ -107,20 +114,21 @@ Junction.prototype = Object.assign(Object.create(THREE.Object3D.prototype), {
     // clear skeleton and mechanism
     clear: function () {
         if (this.skelelton) {
+            this.remove(this.skelelton);
             this.skelelton.traverse(function(obj){
                 if (obj.geometry) {
                     obj.geometry.dispose();
                 }
             });
-            this.remove(this.envelope);
+            // this.remove(this.envelope);
         }
         if (this.mechanism) {
+            this.remove(this.mechanism);
             this.mechanism.traverse(function(obj){
                 if (obj.geometry) {
                     obj.geometry.dispose();
                 }
             });
-            this.remove(this.mechanism);
         }
     },
 
@@ -131,10 +139,7 @@ Junction.prototype = Object.assign(Object.create(THREE.Object3D.prototype), {
     },
 
     buildEnvelope: function (theta=Math.PI/3,height=1) {
-        if (this.envelope) {
-            this.envelope.geometry.dispose();
-            this.remove(this.envelope);
-        }
+        this.clearEnvelope();
         // update parameters
         this.theta = theta;
         this.height = height;
@@ -155,7 +160,15 @@ Junction.prototype = Object.assign(Object.create(THREE.Object3D.prototype), {
         this.envelope.updateMatrixWorld();
     },
 
-    buildSkeleton: function (phase=0) {
+    clearEnvelope: function () {
+        if (this.envelope) {
+            this.remove(this.envelope);
+            this.envelope.geometry.dispose();
+            this.envelope = null;
+        }
+    },
+
+    buildSkeleton: function (phase=Math.PI/2) {
         if (this.skeleton) {
             this.skeleton.dispose();
             this.remove(this.skeleton);
@@ -188,7 +201,7 @@ Junction.prototype = Object.assign(Object.create(THREE.Object3D.prototype), {
 
         // build
         let length = this.height / Math.cos(this.theta);
-        let r0 = this.rSleeve*0.05;
+        let r0 = this.rSleeve*0.1;
         if (this.type=='Rod') {
             let rodGeometry = new THREE.CylinderBufferGeometry(r0,r0,length,8);
             rodGeometry.rotateX(Math.PI/2);
@@ -199,6 +212,7 @@ Junction.prototype = Object.assign(Object.create(THREE.Object3D.prototype), {
             this.add(rod);
             rod.position.copy(this.skeleton.position);
             rod.rotation.copy(this.skeleton.rotation);
+            this.mechanism = rod;
         } else if (this.type == 'Fork') {
             let forkMinLength = 0.3*length;
             let barGeo = new THREE.CylinderGeometry(r0,r0,forkMinLength);
@@ -208,8 +222,8 @@ Junction.prototype = Object.assign(Object.create(THREE.Object3D.prototype), {
             barGeo.merge(baseGeo);
             let geo1 = new THREE.CylinderGeometry(r0,r0,0.7*length);
             let geo2 = geo1.clone()
-            geo1.translate(0,(length + forkMinLength)/2,2*r0);
-            geo2.translate(0,(length + forkMinLength)/2,-2*r0);
+            geo1.translate(0,(length + forkMinLength)/2,2.2*r0);
+            geo2.translate(0,(length + forkMinLength)/2,-2.2*r0);
             barGeo.merge(geo1);
             barGeo.merge(geo2);
             let forGeometry = new THREE.BufferGeometry();
@@ -221,6 +235,7 @@ Junction.prototype = Object.assign(Object.create(THREE.Object3D.prototype), {
             this.add(fork);
             fork.position.copy(this.skeleton.position);
             fork.rotation.copy(this.skeleton.rotation);
+            this.mechanism = fork;
         }
     },
 

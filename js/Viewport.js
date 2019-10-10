@@ -6,6 +6,7 @@ var Viewport = function (sculptor) {
 
     var signals = sculptor.signals;
 
+	var multiSelection = false;
     var container = new UI.Panel();
 	container.setId( 'viewport' );
     // container.setPosition( 'absolute' );
@@ -22,7 +23,8 @@ var Viewport = function (sculptor) {
 	var stats = new Stats();
 	stats.dom.style.top='54px';
 	stats.dom.style.left='184px';
-	container.dom.appendChild( stats.dom );
+	// only for debug
+	// container.dom.appendChild( stats.dom );
 
 	// var scene = sculptor.scenes.unitScene;
 	var scene = sculptor.currentScene;
@@ -131,6 +133,24 @@ var Viewport = function (sculptor) {
 	} );
 
 	sceneHelpers.add( transformControls );
+
+	// keyboard listener
+	function onKeyDown (event) {
+		if (event.key=='Shift') {
+			multiSelection = true;
+			if (sculptor.selectedObjects.indexOf(sculptor.selected)<0) {
+				sculptor.selectedObjects.push(sculptor.selected);
+			}
+			window.addEventListener('keyup',onKeyUp,false);
+		}
+	}
+	window.addEventListener('keydown',onKeyDown,false);
+
+	function onKeyUp (event) {
+		if (event.key=='Shift') {
+			multiSelection = false;
+		}
+	}
 
     // raycast for draw and object selection
 	var raycaster = new THREE.Raycaster();
@@ -313,7 +333,7 @@ var Viewport = function (sculptor) {
 			return;
 		}
 		if (sculptor.currentScene.name == 'layoutScene') {
-			// only meshes can be selected
+			// in layout scene, only unit meshes can be selected
 			for (let its of intersects) {
 				let obj = its.object;
 				if (obj.name =='unit-sleeve' || obj.name == 'unit-bearing' ) {
@@ -344,7 +364,12 @@ var Viewport = function (sculptor) {
 				}
 			}
 		}
-		sculptor.select(selected);
+		
+		if (multiSelection) {
+			sculptor.select(selected,true);
+		} else {
+			sculptor.select(selected);
+		}
 	}
 
 
@@ -474,8 +499,8 @@ var Viewport = function (sculptor) {
 	} );
 
 	signals.objectSelected.add(function(object) {
-		// select nothing
-		if (object == null) {
+		// select nothing or a unit
+		if (object == null || object instanceof Unit) {
 			transformControls.detach();
 			return;
 		}
@@ -486,7 +511,6 @@ var Viewport = function (sculptor) {
 		} else if (object instanceof Rib) {
 			signals.transformModeChanged.dispatch('rotate');
 		// selected a point or a unit
-		} else if (object instanceof Unit) {
 		} else if (object.name == 'ribpoint' || object.name == 'control point' ) {
 			signals.transformModeChanged.dispatch('translate');
 		} else {

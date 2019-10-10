@@ -1,0 +1,76 @@
+/*
+ * sketch scene
+ */
+/* sketching buttons */
+/* free curve-drawing */
+#line {
+    background-image:url(icons/leftbar/line.svg);
+}
+#spline {
+    background-image:url(icons/leftbar/spline.svg);
+}
+#brush2d {
+    background-image:url(icons/leftbar/brush2d.svg);
+}
+#brush3d {
+    background-image:url(icons/leftbar/brush3d.svg);
+}
+/* parametric curves */
+#ellipse {
+    background-image:url(icons/leftbar/ellipse.svg);
+}
+#sin {
+    background-image:url(icons/leftbar/sin.svg);
+}
+#spiral {
+    background-image:url(icons/leftbar/spiral.svg);
+}
+#torusKnot {
+    background-image:url(icons/leftbar/torusknot.svg);
+}
+#decorativeKnot {
+    background-image:url(icons/leftbar/decorativeknot.svg);
+}
+/* geometry processing */
+#importCurve {
+    background-image:url(icons/leftbar/dots.svg);
+}
+#bias {
+    background-image:url(icons/leftbar/bias.svg);
+}
+#sample {
+    background-image:url(icons/leftbar/sample.svg);
+}
+#cut {
+    background-image:url(icons/leftbar/cut.svg);
+}
+#projection {
+    background-image:url(icons/leftbar/projection.svg);
+}
+#auto {
+    background-image:url(icons/leftbar/auto.svg);
+}
+#extrude {
+    background-image:url(icons/leftbar/extrude.svg);
+}
+#revolve {
+    background-image:url(icons/leftbar/revolve.svg);
+}
+#expand {
+    background-image:url(icons/leftbar/expand.svg);
+}
+
+/* geometry parameters*/
+#leftbar-geometry {
+	margin-top:0;
+}
+#leftbar-geometry .Text{
+	font-size: 14px;
+	width:70px;
+}
+#leftbar-geometry .Integer{
+	width: 30px;
+}
+#leftbar-geometry .Number{
+	width: 30px;
+}

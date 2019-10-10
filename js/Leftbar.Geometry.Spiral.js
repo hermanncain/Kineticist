@@ -1,33 +1,37 @@
 Leftbar.Geometry.Spiral = function ( sculptor, object ) {
-    var container = new UI.Row();
-    container.add(new UI.Text('Spiral / Helix').setFontSize('18px').setWidth('100%'));
+    var container = new UI.Row().add(
+        new UI.Text('Spiral / Helix').setClass('sect-title')
+    );
 	var parameters = object.parameters;
+
+    var content = new UI.Panel().setClass('content');
+    container.add(content);
 
 	// radius
     var radiusRow = new UI.Row();
-    radiusRow.add( new UI.Text( 'Radius' ) );
-    container.add( radiusRow );
+    radiusRow.add( new UI.Text( 'Radius' ).setWidth('100px') );
+    content.add( radiusRow );
 	var r = new UI.Number( parameters[0] ).onChange( update );
     radiusRow.add( r );
 
     // radius increment
     var radiusIncRow = new UI.Row();
-    radiusIncRow.add( new UI.Text( 'Radius increment' ) );
-    container.add( radiusIncRow );
+    radiusIncRow.add( new UI.Text( 'Radial pitch' ).setWidth('100px') );
+    content.add( radiusIncRow );
     var rInc = new UI.Number( parameters[1] ).onChange( update );
     radiusIncRow.add( rInc );
 
     // pitch
     var pitchRow = new UI.Row();
-    pitchRow.add( new UI.Text( 'Pitch' ) );
-    container.add( pitchRow );
+    pitchRow.add( new UI.Text( 'Pitch' ).setWidth('100px') );
+    content.add( pitchRow );
     var pitch = new UI.Number( parameters[2] ).onChange( update );
     pitchRow.add( pitch );
 
     // number
     var numberRow = new UI.Row();
-    numberRow.add( new UI.Text( 'Number' ) );
-    container.add( numberRow );
+    numberRow.add( new UI.Text( 'Number' ).setWidth('100px') );
+    content.add( numberRow );
     var number = new UI.Number( parameters[3] ).onChange( update );
     numberRow.add( number );
 

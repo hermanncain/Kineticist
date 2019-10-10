@@ -1,6 +1,8 @@
 Leftbar.Geometry = function (sculptor) {
     var signals = sculptor.signals;
-    var container = new UI.Panel().setId('leftbar-geometry');
+    var container = new UI.Panel().setId('leftbar-geometry').add(
+        new UI.HorizontalRule()
+    );
 
     // parametric geometry
     var parameters = new UI.Span();

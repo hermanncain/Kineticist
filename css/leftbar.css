@@ -1,0 +1,40 @@
+/*
+ * Leftbar
+ */
+
+#leftbar {
+	position: absolute;
+	bottom: 27px;
+	left: 0;
+	width: 180px;
+	height: calc(100% - 81px);
+	background-color: #fff;
+	border-left: solid 2px #333;
+	border-right: solid 2px #333;
+	overflow-x:hidden;
+	overflow-y:auto;
+}
+/* #leftbar .Text{
+	margin: 10px;
+	font-size: 20px;
+} */
+#leftbar .Button {
+    margin:5px;
+    height:45px;
+	width:45px;
+	border: solid 2px #333;
+	border-radius: 5px;
+	background-size: 80% 80%;
+	background-position: center;
+	background-color: #ccc;
+}
+#leftbar .Input {
+    margin-left: 20px;
+    border: solid 1px #000 !important;
+}
+#leftbar button:hover {
+	background-color: #fff;
+}
+#leftbar button.selected {
+	background-color: #fff;
+}

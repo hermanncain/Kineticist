@@ -1,7 +1,6 @@
 /**
  * @class Unit 
- * @param {Array} vps 
- * @param {JSON} params 
+ * @param {string} shape 
  * children
  *  - skeleton
  *  - temples
@@ -31,32 +30,13 @@ function Unit (shape='propeller') {
             size:[1,1,1],
         },
 
-        blade: {
-            shape: 'ellipse',
-            a: 0.2,
-            b: 0.2,
-            seg:32,
-            // scaleXControls:[],
-            // scaleYControls:[],
-            // twistControls:[],
-            scales:[],
-            twists:[],
-        },
-
-        decs: {
-            has: false,
-            positions:[],
-            scales:[],
-            rotations:[],
-            shapes: [],
-        },
-
         sleeve: {
             rOut:1,
             rInner:0.5,
             thickness:0.5
         },
 
+        velocity: 0.01,
     };
 
     // Children
@@ -106,6 +86,19 @@ Unit.prototype = Object.assign(Object.create(THREE.Object3D.prototype), {
         for (let rib of this.skeleton.children) {
             unit.skeleton.add(rib.clone());
         }
+        // sleeve ring also belongs to skeleton
+        if(this.sleeveRing) {
+            unit.sleeveRing = this.sleeveRing.clone();
+            unit.add(unit.sleeveRing);
+        }
+        if(this.rod) {
+            unit.rod = this.rod.clone();
+            unit.add(unit.rod);
+        }
+        if(this.fork) {
+            unit.fork = this.fork.clone();
+            unit.add(unit.fork);
+        }
 
         // to save time, instead of regeneration,
         // clone objects directly
@@ -118,6 +111,14 @@ Unit.prototype = Object.assign(Object.create(THREE.Object3D.prototype), {
         if(this.sleeve) {
             unit.sleeve = this.sleeve.clone();
             unit.add(unit.sleeve);
+        }
+        if(this.bearing) {
+            unit.bearing = this.bearing.clone();
+            unit.add(unit.bearing);
+        }
+        if(this.polygon) {
+            unit.polygon = this.polygon.clone();
+            unit.add(unit.polygon);
         }
         
         // clone data
@@ -228,7 +229,6 @@ Unit.prototype = Object.assign(Object.create(THREE.Object3D.prototype), {
         rib.dispose();
     },
 
-
     // rib array operations
 
     clearTemp: function () {
@@ -250,16 +250,16 @@ Unit.prototype = Object.assign(Object.create(THREE.Object3D.prototype), {
     addTempleRibs: function () {
         while(this.templeSkeleton.children.length>0) {
             let rib = this.templeSkeleton.children[0];
-            let euler = new THREE.Euler(0,0,-rib.rotation.z);
-            rib.end.position.applyEuler(euler);
-            rib.p1.position.applyEuler(euler);
-            rib.p2.position.applyEuler(euler);
-            rib.buildCurve();
+            // let euler = new THREE.Euler(0,0,-rib.rotation.z);
+            // rib.end.position.applyEuler(euler);
+            // rib.p1.position.applyEuler(euler);
+            // rib.p2.position.applyEuler(euler);
+            // rib.buildCurve();
+            // rib.rotateZ(-euler.z);
             rib.setColor(0x0000ff);
-            rib.rotateZ(-euler.z);
             this.skeleton.add(rib);
         }
-        this.sortRibs();
+        // this.sortRibs();
     },
 
     sortRibs: function() {
@@ -376,7 +376,7 @@ Unit.prototype = Object.assign(Object.create(THREE.Object3D.prototype), {
         } else if (this.shape == 'polygon') {
             this.buildSleeve();
             this.buildPolygon();
-        }   
+        }
     },
 
     buildPolygon: function () {
@@ -461,8 +461,10 @@ Unit.prototype = Object.assign(Object.create(THREE.Object3D.prototype), {
             this.remove(this.sleeveRing);
         }
         let r = this.userData.sleeve.rOut;
-        let geometry = new THREE.TorusBufferGeometry(0.9*r,0.1*r,4,16);
-        this.sleeveRing = new THREE.Mesh(geometry, sleeveRingMaterial);
+        let circle = new THREE.EllipseCurve(0,0,0.9*r,0.9*r);
+        var points = circle.getPoints( 72 );
+        var geometry = new THREE.BufferGeometry().setFromPoints( points );
+        this.sleeveRing = new THREE.Line(geometry, sleeveRingMaterial);
         this.sleeveRing.layers.set(3);
         this.add(this.sleeveRing);
     },
@@ -482,12 +484,12 @@ Unit.prototype = Object.assign(Object.create(THREE.Object3D.prototype), {
             
             // section shape
             let shape = new THREE.Shape();
-            if (this.userData.blade.shape== 'ellipse') {
-                shape.ellipse(0,0,this.userData.blade.a,this.userData.blade.b);
+            if (rib.sectionShape== 'ellipse') {
+                shape.ellipse(0,0,rib.sectionShapeParams.a,rib.sectionShapeParams.b);
             }
 
             // segments
-            let steps = this.userData.blade.seg;
+            let steps = rib.sweepSteps;
 
             // start clipping
             let clipping = 0;
@@ -498,15 +500,18 @@ Unit.prototype = Object.assign(Object.create(THREE.Object3D.prototype), {
                     break;
                 }
             }
-
+            let scales = [];
+            for (let i=0;i<rib.widths.length;i++) {
+                scales.push(new THREE.Vector2(rib.widths[i][1],rib.thicknesses[i][1]));
+            }
             let sweepSettings = {
                 curveSegments:8,
                 steps,
                 depth: 1,
                 sweepPath:rib.curve,
                 bevelEnabled: false,
-                scales:this.userData.blade.scales,
-                twists:this.userData.blade.twists,
+                scales:scales,
+                twists:rib.twists.map(function(v){return v[1]/180*Math.PI}),
                 clipping
             };
             
@@ -529,10 +534,10 @@ Unit.prototype = Object.assign(Object.create(THREE.Object3D.prototype), {
         
         // build
         for (let rib of this.skeleton.children) {
-            for (var i=0;i<this.userData.decs.positions.length;i++) {
-                let t = this.userData.decs.positions[i];
-                let s = this.userData.decs.scales[i];
-                let decType = this.userData.decs.shapes[i];
+            for (let marker of rib.markerContainer.children) {
+                let t = marker.pos;
+                let s = marker.sca;
+                let decType = marker.shape;
                 let dec = new THREE.Mesh(buildAccessoryGeometry(decType),this.currentMaterial);
                 dec.scale.set(s,s,s);
                 dec.layers.set(4);
@@ -542,12 +547,6 @@ Unit.prototype = Object.assign(Object.create(THREE.Object3D.prototype), {
                 let tangent = rib.getTNB(t);
                 let angle = Math.atan2(tangent.y,tangent.x);
                 dec.rotateZ(angle+Math.PI);
-                // let j = this.skeleton.children.indexOf(rib);
-                if (pos.angleTo(new THREE.Vector3(0,1,0))<Math.PI/12||pos.angleTo(new THREE.Vector3(0,-1,0))<Math.PI/12) {
-                    // console.log('s')
-                    // dec.scale.set(s*this.userData.morphTrans.size[1],s*this.userData.morphTrans.size[1],s*this.userData.morphTrans.size[1]);
-                    // console.log(j,dec.scale)
-                }
                 this.accessories.add(dec);
             }
         }

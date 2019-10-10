@@ -135,6 +135,13 @@ const backgrounds = {
     'scene2':skyTexture
 };
 
+// acc marker texture
+var textureLoader = new THREE.TextureLoader();
+var markerMaterial = new THREE.SpriteMaterial({map:textureLoader.load('resource/marker.png')});
+
+// stl exporter
+var exporter = new THREE.STLExporter();
+
 // Materials
 
 // Sketch materials
@@ -148,7 +155,7 @@ const backgrounds = {
 // Prototype materials
 // sleeve ring material
 // all sleeve rings in sculpture prorotypes share the same material
-const sleeveRingMaterial = new THREE.MeshBasicMaterial({color:0x000000});
+const sleeveRingMaterial = new THREE.LineBasicMaterial({color:0x000000});
 
 // junction envelope materials
 // all rods/forks in sculpture prorotypes share the same rod/fork material
@@ -205,6 +212,21 @@ function getLabeledMaterial (label) {
             labeledMaterial.color.setHex(0x008800);
         break;
     }
+}
+
+// for downloading
+function save( blob, filename ) {
+
+    link.href = URL.createObjectURL( blob );
+    link.download = filename;
+    link.click();
+
+}
+
+function saveString( text, filename ) {
+
+    save( new Blob( [ text ], { type: 'text/plain' } ), filename );
+
 }
 
 // function switchMechanismMaterial (type) {

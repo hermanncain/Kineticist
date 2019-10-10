@@ -1,0 +1,90 @@
+/* 
+ * Menubar
+ */
+
+ #menubar {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: calc(100% - 4px);
+	height: 50px;
+	border: solid 2px #333;
+	background-color: #fff;
+}
+#menubar .Row {
+	margin-left: 20px !important;
+	margin-right: 20px !important;
+	display: inline;
+}
+#menubar .Button {
+	background-color:#fff !important;
+	height:50px;
+	width:60px;
+}
+#menubar button:hover {
+	filter:invert(100%);
+}
+#menubar button.selected {
+	filter:invert(100%);
+}
+	#new {
+		background-image:url(icons/menubar/new.svg);
+		background-size:70% 70% !important;
+	}
+	#open {
+		background-image:url(icons/menubar/open.svg);
+	}
+	#save {
+		background-image:url(icons/menubar/save.svg);
+		background-size:70% 70% !important;
+	}
+	#print{
+		background-image:url(icons/menubar/print.svg);
+	}
+
+	#unitScene {
+		background-image:url(icons/leftbar/separated.svg);
+	}
+	#sketchScene {
+		background-image:url(icons/leftbar/brush2d.svg);
+	}
+	#Effect {
+		background-image:url(icons/menubar/effect.svg);
+	}
+	#layoutScene {
+		background-image:url(icons/menubar/mechanism.svg);
+	}
+
+	#play {
+		background-image:url(icons/menubar/play.svg);
+		background-size:70% 70% !important;
+	}
+	#pause {
+		background-image:url(icons/menubar/pause.svg);
+		background-size:70% 70% !important;
+		filter:invert(100%);
+	}
+	#reset {
+		background-image:url(icons/menubar/reset.svg);
+		background-size:70% 70% !important;
+	}
+
+	#translate {
+		background-image:url(icons/menubar/translate.svg);
+	}
+	#rotate {
+		background-image:url(icons/menubar/rotate.svg);
+	}
+	#scale {
+		background-image:url(icons/menubar/scale.svg);
+	}
+	#duplicate {
+		background-image:url(icons/menubar/duplicate.svg);
+	}
+	#remove {
+		background-image:url(icons/menubar/remove.svg);
+	}
+
+	#github {
+		background-image:url(icons/menubar/github.svg);
+	}

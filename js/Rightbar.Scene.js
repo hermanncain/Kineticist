@@ -179,6 +179,7 @@ Rightbar.Scene = function (sculptor) {
 
     updateLayerUI();
     updateMatUI();
+    updateLayer(5);
 
     return container;
 

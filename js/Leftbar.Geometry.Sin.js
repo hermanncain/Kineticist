@@ -1,25 +1,29 @@
 Leftbar.Geometry.Sin = function ( sculptor, object ) {
-    var container = new UI.Row();
-    container.add(new UI.Text('Sine').setFontSize('18px'));
+    var container = new UI.Row().add(
+        new UI.Text('Sine').setClass('sect-title')
+    );
 	var parameters = object.parameters;
+
+    var content = new UI.Panel().setClass('content');
+    container.add(content);
 
 	// amplitude
     var amplitudeRow = new UI.Row();
-    container.add( amplitudeRow );
+    content.add( amplitudeRow );
     amplitudeRow.add( new UI.Text( 'Amplitude' ) );
 	var a = new UI.Number( parameters[0] ).onChange( update );
     amplitudeRow.add( a );
 
     // frequency
     var frequencyRow = new UI.Row();
-    container.add( frequencyRow );
+    content.add( frequencyRow );
     frequencyRow.add( new UI.Text( 'Frequency' ) );
     var frequency = new UI.Number( parameters[1] ).onChange( update );
     frequencyRow.add( frequency );
 
     // phi
     var phaseRow = new UI.Row();
-    container.add( phaseRow );
+    content.add( phaseRow );
     phaseRow.add( new UI.Text( 'Phase' ) );
     var phase = new UI.Number( parameters[2] ).onChange( update );
     phaseRow.add( phase );
@@ -27,7 +31,7 @@ Leftbar.Geometry.Sin = function ( sculptor, object ) {
     // angles
     var anglesRow = new UI.Row();
     anglesRow.add( new UI.Text( 'Range' ).setWidth( '70px' ) );
-    container.add( anglesRow );
+    content.add( anglesRow );
     var startAngle = new UI.Number( parameters[3] ).onChange( update );
     var endAngle = new UI.Number( parameters[4] ).onChange( update );
     anglesRow.add( startAngle );

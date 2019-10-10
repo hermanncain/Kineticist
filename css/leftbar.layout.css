@@ -1,0 +1,66 @@
+/*
+ * layout scene
+ */
+#leftbar-layout .Text{
+	font-size:15px;
+	width:80px;
+}
+#leftbar-layout .Integer {
+	width:40px;
+}
+#leftbar-layout .Number {
+	width:30px;
+	margin-left:20px;
+}
+#leftbar-layout .Button {
+	height:30px;
+    width:30px;
+}
+#morphs .Number {
+	width:30px;
+    margin-left:0;
+    margin-right:10px;
+}
+#layout {
+    /* margin:10px; */
+    margin-left:10px !important;
+    margin-top:0 !important;
+    /* height:30px !important;
+    width:30px !important; */
+    background-image: url(icons/leftbar/checked.svg);
+}
+#clear-layout {
+    /* margin:10px; */
+    margin-top:0 !important;
+    /* height:30px !important;
+    width:30px !important; */
+    background-image: url(icons/leftbar/forbidden.svg);
+}
+#translation-controller {
+    margin-left:0 !important;
+    color:red !important;
+    width:150px !important;
+    height:30px !important;
+}
+#rotation-controller {
+    margin-left:0 !important;
+    color:green !important;
+    width:150px !important;
+    height:30px !important;
+}
+#scale-controller {
+    margin-left:0 !important;
+    color:blue !important;
+    width:150px !important;
+    height:30px !important;
+}
+
+/* #leftbar-layout .Button {
+    width:60px;
+    height:30px;
+} */
+#solve-transmissions {
+    /* width:30px !important;
+    height:30px !important; */
+    background-image: url(icons/leftbar/automation.svg);
+}

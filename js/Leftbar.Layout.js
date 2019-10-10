@@ -5,111 +5,92 @@ Leftbar.Layout = function (sculptor) {
     var oldMat = null;
     var newMat = null;
 
-    // ui
-    var container = new UI.Panel().setId('leftbar-layout').setDisplay('none');
+    var container = new UI.Panel().setId('leftbar-layout').setDisplay('none')
 
-    // Global parameters
-    container.add(new UI.Text('Layout config').setFontSize('20px').setWidth('100%'));
+    // 1. Layout
+    // layout/cancel buttons
+    var generateLayoutButton = new UI.Button().setId('layout').onClick(generateLayout);
+    var clearLayoutButton = new UI.Button().setId('clear-layout').onClick(function () {
+        sculptor.sculpture.clear();
+    });
+
+    var layoutTitleContainer = new UI.Panel().setWidth('100%').setHeight('43px').setMargin('0').setPadding('0').setBackground('#ddd');
+    container.add(layoutTitleContainer);
+    layoutTitleContainer.add(
+        new UI.Text('Layout').setClass('bar-title').setWidth('70px'),
+        generateLayoutButton,
+        clearLayoutButton,
+    );
+
+    // layout params
+    var layoutContent = new UI.Panel().setClass('content');
+    container.add(layoutContent);
 
     // number
     var gNumberRow = new UI.Row();
-    container.add(gNumberRow);
-    gNumberRow.add(new UI.Text('Number'));
+    layoutContent.add(gNumberRow);
+    gNumberRow.add(new UI.Text('number').setClass('param-semantics'));
     var gNumber = new UI.Integer( 10 ).setRange( 3, 60 );
     gNumberRow.add(gNumber);
 
     // scale
     var gScaleRow = new UI.Row();
-    container.add(gScaleRow);
-    gScaleRow.add(new UI.Text('Scale'));
+    layoutContent.add(gScaleRow);
+    gScaleRow.add(new UI.Text('scale').setClass('param-semantics'));
     var gScale = new UI.Number( 1 ).setPrecision( 2 ).setRange( 0.01, 100 );
     gScaleRow.add(gScale);
 
     // torsion
     var gTorsionRow =  new UI.Row();
-    container.add(gTorsionRow);
-    gTorsionRow.add(new UI.Text('Torsion'));
-    var gTorsion = new UI.Number( 0 ).setPrecision( 2 ).setRange( 0.01, 100 );
+    layoutContent.add(gTorsionRow);
+    gTorsionRow.add(new UI.Text('torsion').setClass('param-semantics'));
+    var gTorsion = new UI.Number( 0 ).setPrecision( 2 ).setRange( -100, 100 );
     gTorsionRow.add(gTorsion);
 
-    // generation
-    var generateLayoutButton = new UI.Button().setId('layout').onClick(generateLayout);
-    container.add(generateLayoutButton);
-    var clearLayoutButton = new UI.Button().setId('clear-layout').onClick(function () {
-        sculptor.sculpture.clear();
+    // 2. Morphing
+    var morphs = new Leftbar.Morphs(sculptor);
+    container.add(morphs);
+
+    // 3. Mechanism solving
+    var mechContent = new UI.Panel().setClass('content');
+    var solveTrans = new UI.Button().setId('solve-transmissions').onClick(generateTransmissions);
+    // mechContent.add(genMech);
+    container.add(
+        new UI.Text('Mechanism').setClass('bar-title'),
+        mechContent.add(
+            new UI.Text('solve transmissions').setClass('param').setWidth('90px').setMarginRight('20px'),
+            solveTrans
+        )
+    );
+    // mech params
+    let axisDiameter = new UI.Number(10).setRange(5,20).setPrecision(0.1).setMarginLeft('5px');
+    let genMech = new UI.Button('generate mechanisms').setWidth('150px').onClick(function() {
+        sculptor.sculpture.axisWidth = axisDiameter.getValue()/200;
+        sculptor.sculpture.buildAxis();
+        sculptor.sculpture.buildBearings();
     });
-    container.add(clearLayoutButton);
-
-    container.add(new UI.HorizontalRule());
-
-
-    // show morph controls
-
-    container.add(new UI.Text('Morph controls').setFontSize('20px').setWidth('100%'));
-    var morphControlRow = new UI.Row().setMarginLeft('10px');
-    container.add(morphControlRow);
-    let currentMorph = '';
-    let morphMaps = {'T':'bias','R':'rotation','S':'size'};
-    let morphOpButtons = [];
-    (function () {
-        for (let op in morphMaps) {
-            var bt = new UI.Button(op).onClick(function(){
-                showMorphControls(op);
-            });
-            morphControlRow.add(bt);
-            morphOpButtons.push(bt);
-        }
-    })();
-
-    var morphTrans = Leftbar.MorphTransforms(sculptor);
-    container.add(morphTrans);
-
-    function showMorphControls(op) {
-        // reset materials
-        for (let key in sculptor.unitMorphKeys) {
-            sculptor.showKeys = false;
-            for (let u of sculptor.unitMorphKeys[key]) {
-                u.setMaterial(sculptor.currentMaterial);
+    mechContent.add(
+        new UI.Text('axis diameter (mm)').setClass('param').setWidth('100px'),
+        axisDiameter,
+        // new UI.Panel(),
+        // new UI.Text('mechanism').setClass('param'),
+        genMech
+    )
+    // export .stl files
+    let expSTL = new UI.Button('export stl').setWidth('150px').onClick(function() {
+        var ks = sculptor.sculpture.clone();        
+        for (let u of ks.units.children) {
+            if (u.rod) {
+                u.rod.clearEnvelope();
+            }
+            if (u.fork) {
+                u.fork.clearEnvelope();
             }
         }
-        
-        // set material
-        if (op != currentMorph) {
-            sculptor.showKeys = true;
-            getLabeledMaterial(op);
-            for (let unit of sculptor.unitMorphKeys[morphMaps[op]]) {
-                unit.setMaterial(labeledMaterial);
-            }
-        }
-        updateMorphUI(op);
-    }
-
-    function updateMorphUI (op) {
-        if (currentMorph == op) {
-            // deselect
-            for (let bt of morphOpButtons) {
-                if (bt.dom.textContent == op) {
-                    currentMorph = '';
-                    bt.dom.classList.remove('selected');
-                    return;
-                }
-            }
-        } else {
-            // select
-            for (let bt of morphOpButtons) {
-                if (bt.dom.textContent == op) {
-                    currentMorph = op;
-                    bt.dom.classList.add('selected');
-                } else {
-                    bt.dom.classList.remove('selected');
-                }
-            }
-        }
-    }
-
-    container.add(new UI.HorizontalRule());
-
-    container.add(new UI.Text('Mechanism').setFontSize('20px').setWidth('100%'));
+        var result = exporter.parse( ks );
+        saveString( result, 'sculpture.stl' );
+    });
+    mechContent.add(expSTL);
     // var axisWidthRow = new UI.Row();
     // container.add(axisWidthRow);
     // axisWidthRow.add(new UI.Text('axis width'));
@@ -118,11 +99,12 @@ Leftbar.Layout = function (sculptor) {
     //     sculptor.sculpture.axisWidth = axisWidth.getValue();
     // });
     // axisWidthRow.add(axisWidth);
-    var genMech = new UI.Button('solve transmissions').onClick(generateMechanism);
-    container.add(genMech);
+    // var solveRow = new UI.Row();
 
+    
+    // disable for review
     var genUnits = new UI.Button('generate units').onClick(generateUnits);
-    container.add(genUnits);
+    // mechContent.add(genUnits);
 
     function generateLayout(){
         let params = {
@@ -136,7 +118,7 @@ Leftbar.Layout = function (sculptor) {
         // sculptor.resetMorphKeys();
     }
 
-    function generateMechanism() {
+    function generateTransmissions() {
         if (sculptor.sculpture.units.children.length==0) {
             alert('please layout first!');
             return;
@@ -144,9 +126,8 @@ Leftbar.Layout = function (sculptor) {
         if (sculptor.sculpture.buildJoints(true)) {
             signals.infoChanged.dispatch('Got a feasible solution.');
             // TODO: determine junction phases
-
-            sculptor.sculpture.buildAxis();
-            sculptor.sculpture.buildBearings();
+            // sculptor.sculpture.buildAxis();
+            // sculptor.sculpture.buildBearings();
         } else {
             signals.infoChanged.dispatch('Failed, please modify axis shape near highlighted units, or densify units');
         }

@@ -1,8 +1,11 @@
 Leftbar.Geometry.Ellipse = function ( sculptor, object ) {
-    var container = new UI.Row();
-    container.add(new UI.Text('Ellipse').setFontSize('18px').setWidth('100%'));
-	var parameters = object.parameters;
-
+    var container = new UI.Row().add(
+        new UI.Text('Ellipse').setClass('sect-title')
+    );
+    var parameters = object.parameters;
+    
+    var content = new UI.Panel().setClass('content');
+    container.add(content);
 	// center
     // var centerRow = new UI.Row();
     // centerRow.add( new UI.Text( 'Center' ).setWidth( '70px' ) );
@@ -15,7 +18,7 @@ Leftbar.Geometry.Ellipse = function ( sculptor, object ) {
     // axes
     var axesRow = new UI.Row();
     axesRow.add( new UI.Text( 'Radii' ).setWidth( '70px' ) );
-    container.add( axesRow );
+    content.add( axesRow );
     var a = new UI.Number( parameters[2] ).onChange( update );
     var b = new UI.Number( parameters[3] ).onChange( update );
     axesRow.add( a );
@@ -23,7 +26,7 @@ Leftbar.Geometry.Ellipse = function ( sculptor, object ) {
 
     // angles
     var anglesRow = new UI.Row();
-    container.add( anglesRow );
+    content.add( anglesRow );
     anglesRow.add( new UI.Text( 'Start angle' ) );
     var startAngle = new UI.Number( parameters[4] ).setUnit('°').setWidth('50px').onChange( update );
     anglesRow.add( startAngle );
@@ -34,14 +37,14 @@ Leftbar.Geometry.Ellipse = function ( sculptor, object ) {
     // direction
     var directionRow = new UI.Row();
     directionRow.add( new UI.Text( 'Clockwise' ) );
-    container.add( directionRow );
+    content.add( directionRow );
     var clockwise = new UI.Checkbox( parameters[6] ).onChange( update );
     directionRow.add( clockwise );
 
     // rotation
     var rotationRow = new UI.Row();
     rotationRow.add( new UI.Text( 'Rotation' ) );
-    container.add( rotationRow );
+    content.add( rotationRow );
     var r = new UI.Number( parameters[7] ).setUnit('°').onChange( update );
     rotationRow.add( r );
 

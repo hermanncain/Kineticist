@@ -28,11 +28,11 @@
 
 单元布局是将单元进行克隆并将其排列在主轴上的过程，依靠主轴和参考线引导。系统目前的绘图功能尚未开发完全，纯手绘 <img src="css/icons/leftbar/brush2d.svg" width = "10" height = "10"/>  <img src="css/icons/leftbar/brush3d.svg" width = "10" height = "10"/> 不要使用，推荐使用直线、样条和绘图工具中部直接能够导入的参数曲线。
 
-可以绘制多条草图线条，选中一条后，可以在右侧面板的结构选项卡 <img src="css/icons/rightbar/mechanism-tab.svg" width = "10" height = "10"/> 将其提升为主轴 <img src="css/icons/sidebar/axis.svg" width = "10" height = "10"/> ，或降级为普通曲线 <img src="css/icons/sidebar/contour.svg" width = "10" height = "10"/> 。还可以为主轴添加参考线 <img src="css/icons/sidebar/tree.svg" width = "10" height = "10"/> ，在点击该按钮后到绘图区选择一条曲线即可。如果没指定参考线，后续单元排列会使用主轴的PTF标架调整空间旋转。如果指定了参考线会根据参考线调整空间旋转。然后准备进入下一步：
+可以绘制多条草图线条，选中一条后，可以在右侧面板的结构选项卡 <img src="css/icons/rightbar/mechanism-tab.svg" width = "10" height = "10"/> 将其提升为主轴 <img src="css/icons/rightbar/axis.svg" width = "10" height = "10"/> ，或降级为普通曲线 <img src="css/icons/rightbar/contour.svg" width = "10" height = "10"/> 。还可以为主轴添加参考线 <img src="css/icons/rightbar/tree.svg" width = "10" height = "10"/> ，在点击该按钮后到绘图区选择一条曲线即可。如果没指定参考线，后续单元排列会使用主轴的PTF标架调整空间旋转。如果指定了参考线会根据参考线调整空间旋转。然后准备进入下一步：
 - 如果绘制了多条主轴，进入下一步之前记得要选中一个作为后续单元布局的主轴
 - 如果绘制了一条曲线但未指定主轴，进入下一步时系统会自动将其升级为主轴
 
-### 2.2 参数化布局 <img src="css/icons/topbar/mechanism.svg" width = "15" height = "15"/> 
+### 2.2 参数化布局 <img src="css/icons/menubar/mechanism.svg" width = "15" height = "15"/> 
 
 进入此步时，系统会根据主轴最小曲率半径和单元最大半径调整单元的缩放比例。这一步可能会造成单元过小，请自行再做调整。
 

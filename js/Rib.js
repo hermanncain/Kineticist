@@ -14,29 +14,44 @@
 function Rib (end) {
 
     THREE.Object3D.call(this);
-
     this.type = 'Rib';
-    this.skeleton =false;
 
     // container for rotation
     this.endContainer = new THREE.Group();
     this.point1Container = new THREE.Group();
     this.point2Container = new THREE.Group();
     this.curveContainer = new THREE.Group();
-    this.markContainer = new THREE.Group();
-    this.add(this.endContainer,this.point1Container,this.point2Container,this.curveContainer,this.markContainer);
+    // accessories
+    this.markerContainer = new THREE.Group();
+    this.add(this.endContainer,this.point1Container,this.point2Container,this.curveContainer,this.markerContainer);
 
-    // data
+    // data of rib line and control points
     if(end) this.setEnd(end);
     this.start = new THREE.Vector3();
     this.endPosition = null;
     this.p1 = null;
     this.p2 = null;
     this.curve = null;
-    this.marks = [];
 
+    // data of sweep controls
+    this.sweepSteps = 32;
+    this.sectionShape = 'ellipse';
+    this.sectionShapeParams = {
+        'a':0.2,
+        'b':0.2
+    };
+    this.widthControls = [[0,1],[1,1]];
+    this.thicknessControls = [[0,1],[1,1]];
+    this.twistControls = [[0,0],[1,0]];
+    this.widths =[];
+    this.thicknesses = [];
+    this.twists = [];
+
+    // flags
     this.translated = false;
+    this.skeleton =false;
 
+    // rendering
     this.curveMaterial = new THREE.LineBasicMaterial({color:0x0000ff});
 
 }
@@ -62,8 +77,24 @@ Rib.prototype = Object.assign(Object.create(THREE.Object3D.prototype), {
         rib.point1Container.applyMatrix(this.point1Container.matrix);
         rib.point2Container.applyMatrix(this.point2Container.matrix);
         rib.curveContainer.applyMatrix(this.curveContainer.matrix);
+        // clone markers
+        for (let marker of this.markerContainer.children) {
+            rib.markerContainer.add(marker.clone());
+        }
+        rib.markerContainer.applyMatrix(this.markerContainer.matrix);
         rib.applyMatrix(this.matrix);
         rib.buildCurve();
+        
+        // clone data
+        rib.sweepSteps = this.sweepSteps;
+        rib.sectionShape = this.sectionShape;
+        rib.sectionShapeParams = this.sectionShapeParams;
+        rib.widthControls = this.widthControls;
+        rib.thicknessControls = this.thicknessControls;
+        rib.twistControls = this.twistControls;
+        rib.widths = this.widths;
+        rib.thicknesses = this.thicknesses;
+        rib.twists = this.twists;
         return rib;
     },
 
@@ -116,13 +147,12 @@ Rib.prototype = Object.assign(Object.create(THREE.Object3D.prototype), {
         // rebuild curve
         this.curve = new THREE.CatmullRomCurve3([this.start,pos1,pos2,endPosition]);
         let pts = this.curve.getPoints(200);
-        // let geo = new THREE.Geometry();
-        // geo.vertices.push(...pts);
-        // let mesh = new THREE.Line(geo, this.curveMaterial);
-        // mesh.name = 'ribcurve';
-        // mesh.layers.set(3);
-        // this.curveContainer.add(mesh);
         this.buildGeometry(pts)
+        // update marker
+        for (let i=0;i<this.markerContainer.children.length;i++) {
+            let marker = this.markerContainer.children[i]
+            this.updateMarker(i,marker.pos,marker.sca,marker.shape);
+        }
         if (!this.translated) {
             this.endPosition = this.end.position.clone().applyMatrix4(this.endContainer.matrix);
             this.p1Position = this.p1.position.clone().applyMatrix4(this.point1Container.matrix);
@@ -141,8 +171,8 @@ Rib.prototype = Object.assign(Object.create(THREE.Object3D.prototype), {
             mesh.name = 'ribcurve';
             this.curveContainer.add(mesh);
         } else {
-            geometry = new THREE.Geometry();
-            geometry.vertices.push(...pts);
+            geometry = new THREE.BufferGeometry();
+            geometry.setFromPoints(pts);
             mesh = new THREE.Line(geometry, this.curveMaterial);
             mesh.name = 'ribcurve';
             mesh.layers.set(3);
@@ -381,35 +411,42 @@ Rib.prototype = Object.assign(Object.create(THREE.Object3D.prototype), {
     },
 
 
-    // Accessory landmark operations
     // TODO
     getTNB: function(t) {
         let tangent = this.curve.getTangent(t);
         return tangent.applyMatrix4(this.endContainer.matrix).applyMatrix4(this.matrix);
     },
 
-    addMark: function (t) {
-        this.marks.push(t);
+    // Accessory marker operations
+
+    addMarker: function (pos,sca,shape) {
+        let marker = new Marker(pos,sca,shape);
+        let position = this.curve.getPointAt(pos);
+        marker.position.copy(position);
+        this.markerContainer.add(marker);
     },
 
-    clearMark: function () {
-        this.marks = [];
+    updateMarker: function (i,pos,sca,shape) {
+        let marker = this.markerContainer.children[i];
+        marker.update(pos,sca,shape);
+        let position = this.curve.getPointAt(pos);
+        marker.position.copy(position);
     },
 
-    removeMark: function (t) {
-        this.marks.splice(this.marks.indexOf(t),1);
+    removeMarker: function (i) {
+        let marker = this.markerContainer.children[i];
+        this.markerContainer.children.splice(i,1);
+        marker.dispose();
     },
 
-    showMarks: function () {
-        this.markContainer.children = [];
-        for (p of this.marks) {
-            let pos = this.curve.getPointAt(p);
-            let mesh = new THREE.Mesh(new THREE.OctahedronBufferGeometry*0.2,new THREE.MeshBasicMaterial({color: 0x00ffff}));
-            mesh.position.copy(pos);
-            this.markContainer.add(mesh)
+    clearMarker: function () {
+        while (this.markerContainer.children.length>0) {
+            let marker = this.markerContainer.children.pop();
+            marker.dispose();
         }
     },
 
+    // data transfer
 
     toJSON: function () {
         return {
@@ -421,6 +458,21 @@ Rib.prototype = Object.assign(Object.create(THREE.Object3D.prototype), {
             p1ContainerMatrix:this.point1Container.matrix.toArray(),
             p2ContainerMatrix:this.point2Container.matrix.toArray(),
             curveContainerMatrix:this.curveContainer.matrix.toArray(),
+            markerContainerMatrix:this.markerContainer.matrix.toArray(),
+            markers: this.markerContainer.children.map(function(marker){
+                return marker.toJSON();
+            }),
+            sweepSteps: this.sweepSteps,
+            sectionShape: this.sectionShape,
+            sectionShapeParams: this.sectionShapeParams,
+            widthControls: this.widthControls,
+            thicknessControls: this.thicknessControls,
+            twistControls: this.twistControls,
+            widths: this.widths,
+            thicknesses: this.thicknesses,
+            twists: this.twists,
+            translated: this.translated,
+            skeleton: this.skeleton,
         }
     },
 
@@ -432,9 +484,23 @@ Rib.prototype = Object.assign(Object.create(THREE.Object3D.prototype), {
         end.name = 'ribpoint';
         end.layers.set(1);
         end.position.copy(new THREE.Vector3().fromArray(data.end));
-        
+        this.sweepSteps = data.sweepSteps;
+        this.sectionShape = data.sectionShape;
+        this.sectionShapeParams = data.sectionShapeParams;
+        this.widthControls = data.widthControls;
+        this.thicknessControls = data.thicknessControls;
+        this.twistControls = data.twistControls;
+        this.widths = data.widths;
+        this.thicknesses = data.thicknesses;
+        this.twists = data.twists;
+        this.translated = data.translated;
+        this.skeleton = data.skeleton;
         this.setEnd(end);
         this.initialize();
+
+        for (m of data.markers) {
+            this.addMarker(m.pos,m.sca,m.shape);
+        }
 
         this.p1.position.copy(new THREE.Vector3().fromArray(data.p1));
         this.p2.position.copy(new THREE.Vector3().fromArray(data.p2));
@@ -442,7 +508,53 @@ Rib.prototype = Object.assign(Object.create(THREE.Object3D.prototype), {
         this.point1Container.applyMatrix(new THREE.Matrix4().fromArray(data.p1ContainerMatrix));
         this.point2Container.applyMatrix(new THREE.Matrix4().fromArray(data.p2ContainerMatrix));
         this.curveContainer.applyMatrix(new THREE.Matrix4().fromArray(data.curveContainerMatrix));
+        this.markerContainer.applyMatrix(new THREE.Matrix4().fromArray(data.markerContainerMatrix));
         this.applyMatrix(new THREE.Matrix4().fromArray(data.matrix));
         this.buildCurve();
     },
+});
+
+function Marker (pos=1,sca=1,shape='plate') {
+    THREE.Object3D.call(this);
+    // data
+    this.pos = pos;
+    this.sca = sca;
+    this.shape = shape;
+    // geometry
+    this.pt = new THREE.Sprite(markerMaterial);
+    this.pt.layers.set(1);
+    this.pt.scale.set(0.6,0.6,0.6);
+    this.add(this.pt);
+}
+
+Marker.prototype = Object.assign(Object.create(THREE.Object3D.prototype), {
+
+    constructor: Marker,
+
+    clone: function () {
+        let marker = new Marker(this.pos,this.sca,this.shape);
+        marker.applyMatrix(this.matrix);
+        return marker;
+    },
+
+    dispose: function () {
+        this.pt.geometry.dispose();
+    },
+
+    update: function (pos=1,sca=1,shape='plate') {
+        this.pos = pos;
+        this.sca = sca;
+        this.shape = shape;
+    },
+
+    toJSON: function () {
+        return {
+            pos: this.pos,
+            sca: this.sca,
+            shape: this.shape,
+        }
+    },
+    fromJSON: function (data) {
+        this.update(data.pos,data.sca,data.shape);
+    }
 });

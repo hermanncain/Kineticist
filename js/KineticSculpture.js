@@ -30,6 +30,22 @@ KineticSculpture.prototype = Object.assign(Object.create(THREE.Object3D.prototyp
 
     constructor: KineticSculpture,
 
+    clone: function () {
+        let axis = this.axis.clone();
+        let sketches = this.sketches.map(function(s){return s.clone();});
+        let ks = new KineticSculpture(axis,sketches);
+        ks.unit = this.unit.clone();
+        for (let u of this.units.children) {
+            ks.units.add(u.clone());
+        }
+        for (let outline of this.outlines.children) {
+            ks.outline.add(outline.clone());
+        }
+        ks.axisWidth = this.axisWidth;
+        ks.buildAxis();
+        return ks;
+    },
+
     clear: function () {
         if (this.axisMech) {
             this.axisMech.geometry.dispose();
@@ -85,6 +101,7 @@ KineticSculpture.prototype = Object.assign(Object.create(THREE.Object3D.prototyp
     // because if the sketch has multiple intersecting points 
     // with axis' normal plane, it is inaccurate to get the nearest one
     layout: function (unit,params,forcePTF=false) {
+        this.params = params;
         this.unit = unit;
         this.clear();
         this.unit.resetTransform();
@@ -234,10 +251,95 @@ KineticSculpture.prototype = Object.assign(Object.create(THREE.Object3D.prototyp
 
     },
 
+    testGroupedSpeed: function (v1,v2) {
+        for(let i=0;i<this.units.children.length;i++) {
+            if (i%2==0) {
+                this.units.children[i].userData.velocity = v1;
+            } else {
+                this.units.children[i].userData.velocity = v2;
+            }
+        }
+    },
+
+    testVariedSpeed: function () {
+        for (let i = 0; i<this.units.children.length;i++) {
+            let u = this.units.children[i];
+            u.userData.velocity = Math.sin(i/5*Math.PI)*0.01+0.02;
+        }
+        let scope = this;
+        setInterval(function(){
+            for (let i = 0; i<scope.units.children.length;i++) {
+                let u = scope.units.children[i];
+                u.userData.velocity = -u.userData.velocity;
+            }
+        },2000)
+    },
+
+    testVariedSpeed1: function () {
+        this.clearSkeleton();
+        this.clear();
+
+        // initialize an empty unit
+        this.unit = new Unit();
+        let params = {n:20,scale:1,torsion:0};
+        
+        // sample axis and arrange empty units
+        this.setSleeveRadii();
+        this.axis.sample(params.n);
+        this.layout(this.unit,params,true);
+        
+        // get all intersections of all sketches with axis normal planes
+        let samplingEnds = this.axis.getNormalIntersectionsWithCurves([this.sketches[0]],5);
+        // for (i=0;i<20;i++) {
+        //     let ends = samplingEnds[i];
+        //     let unit = this.units.children[i];
+        //     // empty
+        //     if (ends.length == 0) {
+        //         unit.isEmpty = true;
+        //         continue;
+        //     }
+        //     for (end of ends) {
+        //         let point = end.clone();
+        //         unit.worldToLocal(point);
+        //         unit.addRib(point);
+        //     }
+        //     unit.buildSleeveRing();
+        //     unit.updatePointSize(0.1);
+        // }
+
+
+        
+        let omegas = []
+        for (i=0;i<20;i++) {
+            let ends = samplingEnds[i];
+            let unit = this.units.children[i];
+            // empty
+            if (ends.length == 0) {
+                unit.isEmpty = true;
+                continue;
+            }
+            let timeOmegas = [];
+            for (let j=0;j<ends.length-1;j++) {
+                let point = ends[j].clone();
+                timeOmegas.push(ends[j+1].angleTo(point)/60);
+                if (j==0) {
+                    unit.worldToLocal(point);
+                    unit.addRib(point);
+                }
+                if (j==ends.length-2) {
+                    timeOmegas.push(ends[0].angleTo(ends[j+1])/60);
+                }
+            }
+            omegas.push(timeOmegas);
+            unit.buildSleeveRing();
+            unit.updatePointSize(0.1);
+        }
+    },
+
     simulateMotion: function () {
         // rotate units
         for(unit of this.units.children) {
-            unit.rotateZ(0.01);
+            unit.rotateZ(unit.userData.velocity);
         }
         // update outlines
         if(this.outlines.children.length>0) {
@@ -295,6 +397,9 @@ KineticSculpture.prototype = Object.assign(Object.create(THREE.Object3D.prototyp
                         // TODO: build mechanism later
                         u1.rod.buildMechanism();
                         u2.fork.buildMechanism();
+                        if (this.params) {
+                            u2.fork.rotateZ(-this.params.torsion/180*Math.PI);
+                        }
                         connect = true;
                         break;
                     }

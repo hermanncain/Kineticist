@@ -1003,10 +1003,38 @@ UI.Modal.prototype.hide = function () {
 
 };
 
+//Radio
+
+UI.Radio = function ( value, label ) {
+
+	UI.Element.call( this );
+
+	var dom = document.createElement( 'input' );
+	dom.className = 'Radio';
+	dom.type = 'radio';
+	this.label = label;
+	this.dom = dom;
+	this.setValue(value);
+	
+	return this;
+
+};
+
+UI.Radio.prototype = Object.create( UI.Element.prototype );
+UI.Radio.prototype.constructor = UI.Radio;
+
+UI.Radio.prototype.setValue = function (value=false) {
+	this.dom.checked = value;
+	return this;
+};
+
+UI.Radio.prototype.getValue = function () {
+	return this.dom.checked;
+};
 
 // Canvas
 // @author hermanncain
-UI.Canvas = function (data) {
+UI.Canvas = function (data,w=64,h=64) {
 
 	UI.Element.call( this );
 
@@ -1014,8 +1042,8 @@ UI.Canvas = function (data) {
 
 	var dom = document.createElement( 'div' );
 	this.canvas = document.createElement( 'canvas' );
-	this.canvas.width = 64;
-	this.canvas.height = 64;
+	this.canvas.width = w;
+	this.canvas.height = h;
 	this.canvas.style.cursor = 'pointer';
 	this.canvas.style.border = '1px solid #888';
 	this.canvas.style.marginLeft = '10px';
@@ -1064,7 +1092,7 @@ UI.Canvas.prototype.getData = function () {
  * @author hermanncain
  */
 
-UI.SplineController = function ( xRange=1, yRange=1, hasNegative=false, y0=0, y1=0, curveType='cubic') {
+UI.SplineController = function ( xRange=1, yRange=1, hasNegative=false, y0=0, y1=0, w=120,h=50, curveType='cubic') {
 
 	UI.Element.call( this );
 
@@ -1087,8 +1115,8 @@ UI.SplineController = function ( xRange=1, yRange=1, hasNegative=false, y0=0, y1
     
     // canvas
     this.canvas = document.createElement( 'canvas' );
-	this.canvas.width = 120;
-    this.canvas.height = 50;
+	this.canvas.width = w;
+    this.canvas.height = h;
 	this.canvas.style.cursor = 'crosshair';
     this.canvas.style.border = '1px solid #888';
     this.drawer = this.canvas.getContext("2d");
@@ -1165,7 +1193,7 @@ UI.SplineController = function ( xRange=1, yRange=1, hasNegative=false, y0=0, y1
 		var x = (event.clientX - rect.left) / scope.canvas.width;
 		var y = (rect.bottom - event.clientY) / scope.canvas.height;
         let position = [x,y];
-        
+
         for (pt of scope.controlPoints) {
 			let d2 = Math.sqrt((position[0]- pt[0])**2+(position[1] -pt[1])**2);
 			if (d2<0.15) {
@@ -1297,7 +1325,6 @@ UI.SplineController.prototype.draw = function () {
 	this.drawControlPoints();
 	
 	this.dom.dispatchEvent(this.drawEvent);
-    
 };
 
 UI.SplineController.prototype.getValues = function (seg) {
@@ -1311,4 +1338,29 @@ UI.SplineController.prototype.getValues = function (seg) {
         r.push(pn);
     }
     return r;
+};
+
+UI.SplineController.prototype.getControls = function () {
+	let controls = [];
+	for (let pt of this.controlPoints) {
+		let p = [pt[0]*this.xRange, pt[1]*this.yRange];
+		if (this.hasNegative) {
+            p[1] = 2*p[1]-this.yRange;
+		}
+		controls.push(p);
+	}
+    return controls;
+};
+
+UI.SplineController.prototype.setControls = function (pts) {
+	this.controlPoints = [];
+    for (pt of pts) {
+		let canvasControl = [pt[0]/this.xRange,pt[1]/this.yRange];
+        if (this.hasNegative) {
+            canvasControl[1] = (canvasControl[1]+1)/2;
+		}
+		this.controlPoints.push(canvasControl);
+	}
+	this.buildCurve(200);
+	this.draw();
 };
