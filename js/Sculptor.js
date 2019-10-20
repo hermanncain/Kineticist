@@ -68,9 +68,13 @@ class Sculptor {
             transformModeChanged: new Signal(),
             // unit
             unitTypeChanged: new Signal(),
+            unitMorphed: new Signal(),
+            setMorphControl: new Signal(),
+            removeMorphControl: new Signal(),
             // goLayout: new Signal(),
             leftbarChanged: new Signal(),
             sceneChanged: new Signal(),
+            sceneCleared: new Signal(),
 
             // sculpture
             sculptureChanged: new Signal(),
@@ -93,7 +97,6 @@ class Sculptor {
 
         this.currentMaterial = grayMaterial;
         this.showKeys = false;
-        this.currentMorph = '';
 
         // 2.2 drawing modes
         this.drawMode = 'normal';
@@ -122,6 +125,7 @@ class Sculptor {
         this.sketches = [];
         
         // 2.7 sculpture morphing controls
+        this.currentMorph = '';
         this.unitMorphKeys = {bias:[],rotation:[],size:[]};
         // TODO
         // this.ribMorphKeys = {bias:[],rotation:[],size:[]};
@@ -302,6 +306,7 @@ class Sculptor {
     layout(p) {
         this.sculpture.layout(this.unit,p);
         this.resetMorphKeys();
+        this.signals.objectSelected.dispatch(null);
     }
 
     resetMorphKeys() {
@@ -375,49 +380,59 @@ class Sculptor {
     }
 
     toJSON() {
-        // morph key indices
-        var scope = this;
-        var arr = scope.sculpture.units.children;
-        var sculptureJSON = this.sculpture.toJSON();
-        sculptureJSON.biasControls = this.unitMorphKeys.bias.map(function(u){return arr.indexOf(u);});
-        sculptureJSON.rotationControls = this.unitMorphKeys.rotation.map(function(u){return arr.indexOf(u);});
-        sculptureJSON.sizeControls = this.unitMorphKeys.size.map(function(u){return arr.indexOf(u);});
-
-        return sculptureJSON;
+        let scope = this;
+        return {
+            // save morph control unit indices
+            morphControlIdx: {
+                bias: this.unitMorphKeys.bias.map(function(u){
+                    return scope.sculpture.units.children.indexOf(u);
+                }),
+                rotation: this.unitMorphKeys.rotation.map(function(u){
+                    return scope.sculpture.units.children.indexOf(u);
+                }),
+                size: this.unitMorphKeys.size.map(function(u){
+                    return scope.sculpture.units.children.indexOf(u);
+                }),
+            },
+            // save unit
+            unit: this.unit.toJSON(),
+            // save sketches
+            sketches: this.sketches.map(function(s){
+                return s.toJSON();
+            }),
+            // save sculpture
+            sculpture: this.sculpture.toJSON(),
+        }
     }
 
     fromJSON(data) {
-
-        let scope = this;
         this.clear();
-
-        // restore sculptures
-        this.sculpture = new KineticSculpture().fromJSON(data);
-        this.sculpture.units.children.map(function(u){u.setMaterial(scope.unitMaterial)});
-
-        // restore the singleton unit
-        this.unit = this.sculpture.unit;
-        this.unit.setMaterial(grayMaterial);
-        this.scenes.unitScene.add(this.unit);
-
-        // restore axis
-        let axis = this.sculpture.axis;
-
+        // restore unit
+        this.unit.fromJSON(data.unit);
         // restore sketches
-        this.sketches = [axis];
-        this.sketches.push(...this.sculpture.sketches);
-        // this.axes = [axis];
-        this.axis = axis;
+        for (let sketchData of data.sketches) {
+            let sketch = new Sketch().fromJSON(sketchData);
+            this.addSketch(sketch);
+            // restore sculpture axis and sketches
+            if (sketch.eid == data.sculpture.axisId) {
+                this.sculpture.setAxis(sketch);
+                this.axis = sketch;
+            } else if (data.sculpture.sketchIds.indexOf(sketch.eid)>=0) {
+                this.sculpture.addContour(sketch);
+            }
+        }
+        // relayout
+        this.layout(data.sculpture.params);
+        // restore morphkeys
+        for (let key in this.unitMorphKeys) {
+            this.unitMorphKeys[key] = [];
+            for (let i of data.morphControlIdx[key]) {
+                this.unitMorphKeys[key].push(this.sculpture.units.children[i]);
+            }
+        }
+        // remorph
+        this.sculpture.fromJSON(data.sculpture);
         
-        // restore sculpture morphing controls
-        let arr = this.sculpture.units.children;
-        this.unitMorphKeys.bias = data.biasControls.map(function(i){return arr[i];});
-        this.unitMorphKeys.rotation = data.rotationControls.map(function(i){return arr[i];});
-        this.unitMorphKeys.size = data.sizeControls.map(function(i){return arr[i];});
-
-        this.sculpture.buildAxis();
-        this.sculpture.buildBearings();
-
         this.signals.sceneChanged.dispatch('unitScene');
     }
 

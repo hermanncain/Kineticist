@@ -6,6 +6,9 @@ var Viewport = function (sculptor) {
 
     var signals = sculptor.signals;
 
+	let morphMaps = {'T':'bias','R':'rotation','S':'size'};
+	let tempMaps = {'bias':'translate','rotation':'rotate','size':'scale'};
+
 	var multiSelection = false;
     var container = new UI.Panel();
 	container.setId( 'viewport' );
@@ -47,6 +50,40 @@ var Viewport = function (sculptor) {
 	var objectPositionOnDown = null;
 	var objectRotationOnDown = null;
 	var objectScaleOnDown = null;
+
+	var startMorph = false;
+	var morphControls = new THREE.MorphControls( camera, container.dom );
+	morphControls.setSpace('local');
+	morphControls.setMode( 'scale' );
+	morphControls.addEventListener( 'change', function () {
+		if (startMorph) {
+			signals.unitMorphed.dispatch(morphControls.object);
+			render();
+		}
+	});
+	sceneHelpers.add( morphControls );
+	morphControls.addEventListener( 'mouseDown', function () {
+
+		// var object = morphControls.object;
+
+		// objectPositionOnDown = object.position.clone();
+		// objectRotationOnDown = object.rotation.clone();
+		// objectScaleOnDown = object.scale.clone();
+		startMorph = true;
+		controls.enabled = false;
+
+	} );
+	morphControls.addEventListener( 'mouseUp', function () {
+		startMorph = false;
+		// var object = transformControls.object;
+
+		// objectPositionOnDown = object.position.clone();
+		// objectRotationOnDown = object.rotation.clone();
+		// objectScaleOnDown = object.scale.clone();
+
+		controls.enabled = true;
+
+	} );
 
 	var transformControls = new THREE.TransformControls( camera, container.dom );
 	transformControls.setSpace('local');
@@ -500,11 +537,25 @@ var Viewport = function (sculptor) {
 
 	signals.objectSelected.add(function(object) {
 		// select nothing or a unit
-		if (object == null || object instanceof Unit) {
+		if (object == null ) {
 			transformControls.detach();
+			morphControls.detach();
 			return;
+		} else if (object instanceof Unit) {
+			transformControls.detach();
+			// console.log(sculptor.currentMorph)
+			let key = morphMaps[sculptor.currentMorph];
+			if (sculptor.unitMorphKeys[key].indexOf(object)>=0) {	
+				morphControls.attach(object);
+				morphControls.setMode(tempMaps[key]);
+			}else {
+				morphControls.detach();
+			}
+			return;
+		} else {
+			transformControls.attach( object );
 		}
-		transformControls.attach( object );
+		
 		// selected a sketch
 		if (object instanceof Sketch) {
 			signals.transformModeChanged.dispatch('translate');
@@ -520,12 +571,32 @@ var Viewport = function (sculptor) {
 
 	signals.sculptureChanged.add(function(){
 		castObjects = sculptor.sculpture.getMechanisms();
-	})
+	});
 	signals.transformModeChanged.add( function ( mode ) {
 		
 		transformControls.setMode( mode );
 		
 	} );
+	signals.setMorphControl.add(function(key){
+		if (!(sculptor.selected instanceof Unit)){
+			return;
+		}
+		morphControls.attach(sculptor.selected);
+		switch(key) {
+			case 'bias':
+				morphControls.setMode('translate');
+			break;
+			case 'rotation':
+				morphControls.setMode('rotate');
+			break;
+			case 'size':
+				morphControls.setMode('scale');
+			break;
+		}
+	});
+	signals.removeMorphControl.add(function(){
+		morphControls.detach();
+	});
 
     function animate() {
 
@@ -591,6 +662,10 @@ var Viewport = function (sculptor) {
 		sculptor.deselect();
 		// sculptor.selectedSketch = null;
 		controls.reset();
+	});
+
+	signals.sceneCleared.add(function(){
+		scene = sculptor.currentScene;
 	});
 
     animate();

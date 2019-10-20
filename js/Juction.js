@@ -290,6 +290,8 @@ Junction.prototype = Object.assign(Object.create(THREE.Object3D.prototype), {
         this.rSleeve = rSleeve;
         this.seg = seg;
         this.initialize();
+        this.buildSkeleton(this.phase);
+        this.buildMechanism();
     },
 
 });

@@ -66,7 +66,7 @@ Leftbar.Layout = function (sculptor) {
     let axisDiameter = new UI.Number(10).setRange(5,20).setPrecision(0.1).setMarginLeft('5px');
     let genMech = new UI.Button('generate mechanisms').setWidth('150px').onClick(function() {
         sculptor.sculpture.axisWidth = axisDiameter.getValue()/200;
-        sculptor.sculpture.buildAxis();
+        sculptor.sculpture.buildAxle();
         sculptor.sculpture.buildBearings();
     });
     mechContent.add(
@@ -144,12 +144,20 @@ Leftbar.Layout = function (sculptor) {
             u.userData.blade.b = 0.05;
             u.generateShape();
         }
-        sculpture.buildAxis();
+        sculpture.buildAxle();
     }
 
     // get scale factor based on unit size and axis k
     signals.sceneChanged.add(function(name){
         if(name!='layoutScene'||sculptor.unit.skeleton.children.length==0||!sculptor.axis) return;
+        // restore
+        if (sculptor.sculpture.params) {
+            gNumber.setValue(sculptor.sculpture.params.n);
+            gScale.setValue(sculptor.sculpture.params.scale);
+            gTorsion.setValue(sculptor.sculpture.params.torsion);
+            return;
+        }
+        // new
         let k = getCurvatureData(sculptor.axis.curve,200).radius.min*sculptor.axis.scale.x;
         let r = sculptor.unit.getMaxRadius()*sculptor.unit.scale.x;
         if (r == 0) {

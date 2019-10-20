@@ -23,6 +23,8 @@ function Unit (shape='propeller') {
     this.shape = shape;
 
     // data
+    // TODO: merge other string/number/bool properties into userdata
+    // because {} can be encoding/decoding integrally
     this.userData = {
         morphTrans: {
             bias:[0,0,0],
@@ -86,10 +88,19 @@ Unit.prototype = Object.assign(Object.create(THREE.Object3D.prototype), {
         for (let rib of this.skeleton.children) {
             unit.skeleton.add(rib.clone());
         }
-        // sleeve ring also belongs to skeleton
         if(this.sleeveRing) {
             unit.sleeveRing = this.sleeveRing.clone();
             unit.add(unit.sleeveRing);
+        }
+
+        // regenerate shapes
+        if (this.blades.children.length>0) {
+            unit.generateShape();
+        }
+
+        // clone mechisms
+        if (this.bearing) {
+            this.buildBearing();
         }
         if(this.rod) {
             unit.rod = this.rod.clone();
@@ -98,27 +109,6 @@ Unit.prototype = Object.assign(Object.create(THREE.Object3D.prototype), {
         if(this.fork) {
             unit.fork = this.fork.clone();
             unit.add(unit.fork);
-        }
-
-        // to save time, instead of regeneration,
-        // clone objects directly
-        for (let blade of this.blades.children) {
-            unit.blades.add(blade.clone());
-        }
-        for (let accessory of this.accessories.children) {
-            unit.accessories.add(accessory.clone());
-        }
-        if(this.sleeve) {
-            unit.sleeve = this.sleeve.clone();
-            unit.add(unit.sleeve);
-        }
-        if(this.bearing) {
-            unit.bearing = this.bearing.clone();
-            unit.add(unit.bearing);
-        }
-        if(this.polygon) {
-            unit.polygon = this.polygon.clone();
-            unit.add(unit.polygon);
         }
         
         // clone data
@@ -157,7 +147,7 @@ Unit.prototype = Object.assign(Object.create(THREE.Object3D.prototype), {
         }
         this.currentMaterial = mat;
         this.traverse(function(obj){
-            if (obj.name == 'unit-sleeve'||obj.name=='unit-blade'||obj.name=='unit-accessory'||obj.name=='transmission') {
+            if (obj.name == 'unit-sleeve'||obj.name=='unit-blade'||obj.name=='unit-accessory'||obj.name=='unit-rod'||obj.name=='unit-fork') {
                 obj.material = mat;
             }
         });
@@ -250,16 +240,16 @@ Unit.prototype = Object.assign(Object.create(THREE.Object3D.prototype), {
     addTempleRibs: function () {
         while(this.templeSkeleton.children.length>0) {
             let rib = this.templeSkeleton.children[0];
-            // let euler = new THREE.Euler(0,0,-rib.rotation.z);
-            // rib.end.position.applyEuler(euler);
-            // rib.p1.position.applyEuler(euler);
-            // rib.p2.position.applyEuler(euler);
-            // rib.buildCurve();
-            // rib.rotateZ(-euler.z);
+            let euler = new THREE.Euler(0,0,-rib.rotation.z);
+            rib.end.position.applyEuler(euler);
+            rib.p1.position.applyEuler(euler);
+            rib.p2.position.applyEuler(euler);
+            rib.rotation.z=0;
+            rib.updateMatrix();
+            rib.buildCurve();
             rib.setColor(0x0000ff);
             this.skeleton.add(rib);
         }
-        // this.sortRibs();
     },
 
     sortRibs: function() {
@@ -461,7 +451,7 @@ Unit.prototype = Object.assign(Object.create(THREE.Object3D.prototype), {
             this.remove(this.sleeveRing);
         }
         let r = this.userData.sleeve.rOut;
-        let circle = new THREE.EllipseCurve(0,0,0.9*r,0.9*r);
+        let circle = new THREE.EllipseCurve(0,0,r,r);
         var points = circle.getPoints( 72 );
         var geometry = new THREE.BufferGeometry().setFromPoints( points );
         this.sleeveRing = new THREE.Line(geometry, sleeveRingMaterial);
@@ -646,13 +636,14 @@ Unit.prototype = Object.assign(Object.create(THREE.Object3D.prototype), {
     toJSON: function () {
         return {
             type:'Unit',
-            // 1. userData
+            // userData
             userData:this.userData,
             matrix: this.matrix.toArray(),
-            // 2. semantic skeletons
+            // semantic skeletons
             ribs: this.skeleton.children.map(function(rib){
                 return rib.toJSON();
             }),
+            generated: this.blades.children.length>0,
             metaRotation: this.metaRotation.toArray(),
         };
     },
@@ -661,16 +652,17 @@ Unit.prototype = Object.assign(Object.create(THREE.Object3D.prototype), {
 
         this.userData = data.userData;
 
-        // generate ribs
+        // restore ribs
         for (let ribData of data.ribs) {
             var rib = new Rib();
             rib.fromJSON(ribData);
             this.skeleton.add(rib);
         }
-        // build
-        this.generateShape();
-
-        // transform
+        // restore meshes
+        if (data.generated) {
+            this.generateShape();
+        }
+        // restore transformations
         this.applyMatrix(new THREE.Matrix4().fromArray(data.matrix));
         this.metaRotation = new THREE.Euler().fromArray(data.metaRotation);
         this.updatePointSize();
@@ -678,296 +670,3 @@ Unit.prototype = Object.assign(Object.create(THREE.Object3D.prototype), {
     },
     
 });
-
-    // updateCollider: function () {
-    //     // this.colliders.children.map(function(obj){
-    //     //     obj.geometry.dispose();
-    //     // })
-    //     // this.colliders.children = [];
-        
-    //     let zMax=-100,zMin=100,rMax=0;
-    //     this.skeleton.children.map(function(rib){
-    //         let p = rib.end.position;
-    //         zMax = p.z > zMax ? p.z : zMax;
-    //         zMin = p.z < zMin ? p.z : zMin;
-    //         let rInner = rib.end.position.x**2+rib.end.position.y**2;
-    //         rMax = rInner > rMax**2 ? Math.sqrt(rInner) : rMax;
-    //     });
-    //     // let h = zMax-zMin;
-
-    //     // collider used in collision with axis
-    //     // let outline = new THREE.Shape();
-    //     // outline.arc(0,0,rMax);
-    //     // let hole = new THREE.Shape();
-    //     // hole.arc(0,0,this.userData.sleeve.rOut*0.2);
-    //     // outline.holes.push(hole);
-    //     // let extrudeSettings = {
-    //     //     steps:1,
-    //     //     depth:h,
-    //     //     bevelEnabled:false
-    //     // }
-    //     // let collider1 = new THREE.Mesh(new THREE.ExtrudeGeometry(outline,extrudeSettings));
-    //     // this.colliders.add(collider1);
-    //     // collider1.position.set(0,0,zMin);
-    //     // // invisible for camera
-    //     // collider1.layers.set(7);
-
-    //     // collider used in collision with other unit skeletons
-    //     this.buildEnvelope(rMax,zMax,zMin);
-    //     // h = h< 1e-4 ? 0.01:h;
-    //     // let collider2 = new THREE.Mesh(new THREE.CylinderGeometry(rMax,rMax,h,12,1));
-    //     // this.colliders.add(collider2);
-    //     // collider2.position.set(0,0,(zMax+zMin)/2);
-    //     // collider2.rotation.set(Math.PI/2,0,0)
-    //     // // invisible for camera
-    //     // collider2.layers.set(7);
-    // },
-
-        // buildEnvelope: function (radius,top,bottom) {
-        
-    //     if (radius<1e-4) {
-    //         console.log('empty')
-    //         this.isEmpty = true;
-    //         return;
-    //     }
-
-    //     // clear memory
-    //     this.colliders.children.map(function(obj){
-    //         obj.geometry.dispose();
-    //     })
-    //     this.colliders.children = [];
-
-    //     // build
-    //     let h = top - bottom < 1e-4 ? 0.01 : top - bottom;
-    //     let envelope = new THREE.Mesh(new THREE.CylinderGeometry(radius,radius,h,12,1));
-    //     this.colliders.add(envelope);
-    //     envelope.position.set(0,0,(top+bottom)/2);
-    //     envelope.rotation.set(Math.PI/2,0,0);
-
-    //     // invisible for camera
-    //     envelope.layers.set(7);
-
-    // },
-
-        // setUpload: function (obj) {
-    //     this.upload.children = [];
-    //     this.upload.add(obj);
-    // },
-
-        // Advanced visual point operations
-    // resetVPs: function () {
-    //     for (p of this.vps.children) {
-    //         if (p.metaPosition) {
-    //             p.position.copy(p.metaPosition);
-    //         } else {
-    //             p.metaPosition = p.position.clone();
-    //         }
-    //     }
-    // },
-
-    // scaleRadius: function (s) {
-    //     this.resetVPs();
-    //     for (p of this.vps.children) {
-    //         p.position.set(p.position.x*s,p.position.y*s,p.position.z);
-    //     }
-    //     // this.generateShapes();
-    // },
-
-    // bias: function(dir,dist) {
-    //     let t = dir/180*Math.PI;
-    //     for (let p of this.vps.children) {
-    //         p.position.set(p.position.x+dist*Math.cos(t), p.position.y+dist*Math.sin(t), p.position.z);
-    //     }
-    // },
-
-    // radicalRotate: function(dir, t) {
-    //     let a = dir/180*Math.PI;
-    //     let axis = new THREE.Vector3(Math.cos(a),Math.sin(a),0);
-    //     this.vps.rotateOnAxis(axis,t/180*Math.PI);
-    //     this.vps.updateMatrixWorld();
-    // },
-
-    // this will change unit's rotation direction in motion
-    // CAUTION: may make the mechanism unattainable
-    // radicalTort: function (dir, t) {
-    //     let a = dir/180*Math.PI;
-    //     let axis = new THREE.Vector3(Math.cos(a),Math.sin(a),0);
-    //     this.rotateOnAxis(axis,t/180*Math.PI);
-    // },
-
-        // 4. shape
-    // shape group for parts
-    // this.shape = new THREE.Group();
-    // this.shape.name = 'shape';
-    // this.add(this.shape);
-
-    // 4.1 sleeve
-    // this.sleeve = new THREE.Group();
-    // this.sleeve.name = 'unit-sleeve';
-    // this.shape.add(this.sleeve);
-
-    // 4.2 blades
-    // this.blades = new THREE.Group();
-    // this.blades.name = 'blades';
-    // this.shape.add(this.blades);
-
-    // // 4.3 accessories
-    // this.accessories = new THREE.Group();
-    // this.accessories.name = 'accessories';
-    // this.shape.add(this.accessories);
-
-    // 4.4 transmissions
-    // this.transmissions = new THREE.Group();
-    // this.transmissions.name = 'transmissions';
-    // this.shape.add(this.transmissions);
-
-    // 4.5 bearing
-    // this.bearing = new THREE.Group();
-    // this.bearing.name = 'bearing';
-    // this.shape.add(this.bearing);
-
-    // 4.6 upload
-    // this.upload = new THREE.Group();
-    // this.upload.name = 'upload';
-    // this.shape.add(this.upload);
-
-    // 5. colliders
-    // this.colliders = new THREE.Group();
-    // this.add(this.colliders);
-
-        // this.pointMaterial = new THREE.PointsMaterial( { color: 0x0000ff } );
-    // this.tempPointMaterial = new THREE.PointsMaterial( { color: 0xffff00 } );
-
-        // inner transform
-    // resetInnerTransform: function () {
-    //     for (let rib of this.skeleton.children) {
-    //         rib.rotation.set(0,0,0);
-    //         rib.scale.set(1,1,1);
-    //     }
-    // },
-
-    //     // this.currentMaterial = new THREE.MeshBasicMaterial();
-
-
-    //         parseTransmissionParameters: function () {
-    //     let p = this.userData.transmissions;
-    //     let params = {
-    //         // cone parameters
-    //         r:p.r,h:p.h,
-    //         // rod
-    //         pstart:new THREE.Vector3().fromArray(p.pstart),pdir:new THREE.Vector3().fromArray(p.pdir),
-    //         rodLength:p.rodLength,
-    //         // fork
-    //         rstart:new THREE.Vector3().fromArray(p.rstart),rdir:new THREE.Vector3().fromArray(p.rdir),
-    //         forkLength:p.forkLength,
-    //         forkMinLength:p.forkMinLength,
-    //         pusherStartWorld: new THREE.Vector3().fromArray(p.pusherStartWorld),
-    //         receiverStartWorld: new THREE.Vector3().fromArray(p.receiverStartWorld),
-    //         point: new THREE.Vector3().fromArray(p.point),
-    //     };
-    //     return params;
-    // },
-
-    // adjustJoint: function(mesh,params) {
-    //     let v1 = params.point.clone().sub(params.pusherStartWorld);
-    //     let v2 = params.point.clone().sub(params.receiverStartWorld);
-    //     let crossDirWorld = v1.clone().cross(v2).normalize();
-    //     let crossDirLocal = mesh.worldToLocal(crossDirWorld.clone().sub(v2)).normalize();
-    //     let receiverNormalWorld = mesh.localToWorld(new THREE.Vector3(0,0,1));
-    //     let yAxis = mesh.localToWorld(new THREE.Vector3(0,1,0));
-    //     let angle = crossDirLocal.angleTo(receiverNormalWorld);
-    //     let dir = crossDirLocal.clone().cross(receiverNormalWorld).multiply(yAxis);
-    //     if (dir <0) {
-    //         mesh.rotateY(-angle);
-    //     } else {
-    //         mesh.rotateY(angle);
-    //     }
-    // },
-
-    // buildRod1: function () {
-        
-    //     let params = this.parseTransmissionParameters();
-
-    //     // build geometry
-    //     let geo = new THREE.CylinderBufferGeometry(0.1,0.1,params.rodLength);
-    //     geo.translate(0,params.rodLength/2,0);
-    //     let mesh = new THREE.Mesh(geo,this.currentMaterial);
-    //     mesh.layers.set(4);
-    //     mesh.name = 'transmission';
-
-    //     // rod skeleton
-    //     let rodSkeleton = new THREE.ArrowHelper(new THREE.Vector3(0,1,0),new THREE.Vector3(),params.rodLength,0xce21c7);
-    //     rodSkeleton.line.layers.set(3);
-    //     rodSkeleton.cone.layers.set(3);
-
-    //     // rod skeleton motion envelope
-    //     this.transmissions.add(this.buildTransmissionEnvelope('rod',params.r,params.h));
-
-    //     // update matrix
-    //     mesh.add(rodSkeleton);
-    //     mesh.position.copy(params.pstart);
-    //     mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0), params.pdir.clone().normalize());
-    //     mesh.updateMatrixWorld();
-    //     let base = new THREE.Mesh(new THREE.SphereBufferGeometry(0.2),this.currentMaterial);
-    //     base.layers.set(4);
-    //     base.name = 'transmission';
-    //     mesh.add(base);
-    //     this.adjustJoint(mesh,params);
-    //     this.transmissions.add(mesh);
-
-    // },
-
-    // buildFork1: function () {
-
-    //     let params = this.parseTransmissionParameters();
-        
-    //     // build geometry
-    //     let barGeo = new THREE.CylinderGeometry(0.1,0.1,params.forkMinLength);
-    //     barGeo.translate(0,params.forkMinLength/2,0);
-    //     let baseGeo = new THREE.BoxGeometry(0.2,0.2,0.6);
-    //     baseGeo.translate(0,params.forkMinLength-0.1,0);
-    //     barGeo.merge(baseGeo);
-    //     let geo1 = new THREE.CylinderGeometry(0.1,0.1,params.forkLength-params.forkMinLength);
-    //     geo1.translate(0,(params.forkLength+params.forkMinLength)/2,0.2);
-    //     let geo2 = new THREE.CylinderGeometry(0.1,0.1,params.forkLength-params.forkMinLength);
-    //     geo2.translate(0,(params.forkLength+params.forkMinLength)/2,-0.2);
-    //     barGeo.merge(geo1);
-    //     barGeo.merge(geo2);
-    //     let bufferGeo = new THREE.BufferGeometry();
-    //     bufferGeo.fromGeometry(barGeo);
-    //     let mesh = new THREE.Mesh(bufferGeo,this.currentMaterial);
-    //     mesh.layers.set(4);
-    //     mesh.name = 'transmission';
-
-    //     // fork skeleton
-    //     let forkSkeleton = new THREE.ArrowHelper(new THREE.Vector3(0,1,0),new THREE.Vector3(),params.rodLength,0xce21c7);
-    //     forkSkeleton.line.layers.set(3);
-    //     forkSkeleton.cone.layers.set(3);
-    //     mesh.add(forkSkeleton);
-
-    //     // fork skeleton motion envelope
-    //     this.transmissions.add(this.buildTransmissionEnvelope('fork',params.r,params.h));
-
-    //     // update fork matrix
-    //     mesh.position.copy(params.rstart);
-    //     mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0), params.rdir.clone().normalize());
-    //     mesh.updateMatrixWorld();
-    //     this.adjustJoint(mesh,params);
-    //     this.transmissions.add(mesh);
-        
-    // },
-
-    // buildTransmissionEnvelope: function (type,r,h) {
-    //     let frustumH = h-h/r;
-    //     let geo = new THREE.CylinderBufferGeometry(this.userData.sleeve.rOut, r, frustumH,64,1,true);
-    //     let frustum = new THREE.Mesh(geo,new THREE.MeshPhongMaterial({shininess:0,color:0x26876a,side:THREE.DoubleSide,transparent:true,opacity:0.5}));
-    //     frustum.name = 'motion envelope';
-    //     frustum.visible = false;
-    //     if (type == 'rod') {
-    //         frustum.rotateX(-Math.PI/2);
-    //     } else if (type == 'fork') {
-    //         frustum.rotateX(Math.PI/2);
-    //     }
-    //     frustum.translateY(-frustumH/2);
-    //     return frustum;
-    // },

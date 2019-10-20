@@ -118,6 +118,67 @@ Rightbar.Scene = function (sculptor) {
     unitMaterial.setOptions(['gray','metal','colored']);
     unitMaterial.setValue(0);
     
+    // debug
+    var debugRow = new UI.Row();
+    container.add(debugRow);
+    // show single unit
+    var isShowingSingle = false;
+    let showSingle = new UI.Button('single').onClick(function(){
+        let s = sculptor.sculpture;
+        let n = s.units.children.length;
+        if (!isShowingSingle) {
+            for (let i=0;i<n;i++) {
+                if (i != 3) {
+                    s.units.children[i].visible = false;
+                }
+            }
+            isShowingSingle = true;
+        } else {
+            s.units.children.map(function(u){
+                u.visible = true;
+            });
+            isShowingSingle = false;
+        }
+    });
+    debugRow.add(showSingle);
+    // show two neighbor units
+    var isShowingPair = false;
+    let showPair = new UI.Button('pair').onClick(function(){
+        let s = sculptor.sculpture;
+        let n = s.units.children.length;
+        if (!isShowingPair) {
+            for (let i=0;i<n;i++) {
+                if (i != 3 && i != 4) {
+                    s.units.children[i].visible = false;
+                }
+            }
+            isShowingPair = true;
+        } else {
+            s.units.children.map(function(u){
+                u.visible = true;
+            });
+            isShowingPair = false;
+        }
+    });
+    debugRow.add(showPair);
+    // hide all units
+    var isHidingUnits = false;
+    let hideUnits = new UI.Button('hide').onClick(function(){
+        let s = sculptor.sculpture.units.children;
+        if (!isHidingUnits) {
+            s.map(function(u){
+                u.visible = false;
+            });
+            isHidingUnits = true;
+        } else {
+            s.map(function(u){
+                u.visible = true;
+            });
+            isHidingUnits = false;
+        }
+    });
+    debugRow.add(hideUnits);
+
     function updateLayer (layer) {
         var mask = sculptor.camera.layers.mask.toString(2);
         while (mask.length<=sculptor.camLayers) {

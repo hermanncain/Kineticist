@@ -30,8 +30,9 @@ var Menubar = function ( sculptor ) {
 
 	// create a new kinetic sculpture design
 	var newKS = new UI.Button().setId('new').onClick(function(){
-		if (alert('start a new project, while unsaved work will be lost, still continue?')) {
+		if (confirm('start a new project, while unsaved work will be lost, still continue?')) {
 			sculptor.clear();
+			signals.sceneCleared.dispatch();
 		}
 	});
 	newKS.dom.title = 'new';
@@ -54,11 +55,8 @@ var Menubar = function ( sculptor ) {
 			alert( error );
 			return;
 		}
-		if (data.type=='Unit') {
-			sculptor.unit.fromJSON(data);
-		} else {
-			sculptor.fromJSON(data);
-		}
+		sculptor.clear();
+		sculptor.fromJSON(data);
 	},false);
 	// upload dom
 	var form = document.createElement( 'form' );
@@ -81,24 +79,25 @@ var Menubar = function ( sculptor ) {
 
 	// save/download a kinetic sculpture project
 	var saveKS = new UI.Button().setId('save').onClick(function(){
-		console.log(sculptor.currentScene.name)
+		// var output = JSON.stringify( sculptor.toJSON(), parseNumber, '\t' );
+		saveString(JSON.stringify( sculptor.toJSON(), parseNumber, '\t' ), 'sculpture.json');
 		// save unit
-		if (sculptor.currentScene.name == 'unitScene') {
-			if (sculptor.unit.skeleton.children.length==0 && sculptor.unit.upload.children.length==0) {
-				alert('empty unit!');
-				return;
-			} else {
-				var output = sculptor.unit.toJSON();
-				output = JSON.stringify( output, parseNumber, '\t' );
-				saveString(output, 'unit.json');
-			}
+		// if (sculptor.currentScene.name == 'unitScene') {
+		// 	if (sculptor.unit.skeleton.children.length==0 && sculptor.unit.upload.children.length==0) {
+		// 		alert('empty unit!');
+		// 		return;
+		// 	} else {
+		// 		var output = sculptor.unit.toJSON();
+		// 		output = JSON.stringify( output, parseNumber, '\t' );
+		// 		saveString(output, 'unit.json');
+		// 	}
 
-		// save sculpture
-		} else if (sculptor.currentScene.name == 'layoutScene') {
-			var output = sculptor.toJSON();
-			output = JSON.stringify( output, parseNumber, '\t' );
-			saveString(output, 'sculpture.json');
-		}
+		// // save sculpture
+		// } else if (sculptor.currentScene.name == 'layoutScene') {
+		// 	var output = sculptor.toJSON();
+		// 	output = JSON.stringify( output, parseNumber, '\t' );
+		// 	saveString(output, 'sculpture.json');
+		// }
 	});
 	saveKS.dom.title = 'save';
 	fileRow.add( saveKS );
@@ -143,41 +142,6 @@ var Menubar = function ( sculptor ) {
 		sculptor.sculpture.reset();
 	});
 	controlRow.add(reset);
-
-
-	// for debug and figures in paper
-
-	let showUnit = new UI.Button('full unit').onClick(function(){
-		sculptor.unit.visible = false;
-		let unitExample = sculptor.sculpture.units.children[1].clone();
-		unitExample.scale.set(1,1,1);
-		unitExample.rotation.set(0,0,0);
-		unitExample.position.set(0,0,0);
-		sculptor.scenes.unitScene.add(unitExample);
-	});
-	// controlRow.add(showUnit);
-
-	let showPair = new UI.Button('pair').onClick(function(){
-		let s = sculptor.sculpture;
-		let n = s.units.children.length;
-		for (let i=0;i<n;i++) {
-			if (i != 3 && i != 4) {
-				s.units.children[i].visible = false;
-			}
-			
-		}
-	});
-	// controlRow.add(showPair);
-
-	let test2 = new UI.Button('r').onClick(function(){
-		let jj = {
-			sculptor: sculptor.toJSON(),
-			ks: sculptor.sculpture.toJSON(),
-		}
-		
-	});
-	// controlRow.add(test2);
-
 	
 	// transform operations
 	var transformRow = new UI.Row().setDisplay('none');
@@ -274,26 +238,6 @@ var Menubar = function ( sculptor ) {
 		signals.sceneChanged.dispatch(name);
 	}
 
-	// function updateModes(name) {
-	// 	for (let b of buildButtons) {
-    //         if (b.dom.id == name) {
-	// 			// if (b.dom.classList.contains('selected')) {
-	// 			// 	b.dom.classList.remove('selected');
-	// 			// } else {
-	// 				b.dom.classList.add('selected');
-	// 			// }
-    //         } else {
-	// 			b.dom.classList.remove('selected');
-    //         }
-	// 	}
-	// 	// signals.leftbarChanged.dispatch(name);
-	// 	// signals.sceneChanged.dispatch(name);
-	// }
-
-	// signals.leftbarChanged.add(function(name){
-	// 	updateModes(name);
-	// });
-
 	signals.transformModeChanged.add(function(mode){
 		for (bt of transformButtons) {
 			if (bt.dom.id == mode) {
@@ -330,6 +274,13 @@ var Menubar = function ( sculptor ) {
 			controlRow.setDisplay('');
 		} else {
 			controlRow.setDisplay('none');
+		}
+		for (let b of buildButtons) {
+            if (b.dom.id == name) {
+				b.dom.classList.add('selected');
+            } else {
+				b.dom.classList.remove('selected');
+            }
 		}
 	});
 

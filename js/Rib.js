@@ -71,8 +71,8 @@ Rib.prototype = Object.assign(Object.create(THREE.Object3D.prototype), {
         let rib = new Rib(cloneEnd);
         rib.curveMaterial = this.curveMaterial.clone();
         rib.initialize();
-        rib.p1.applyMatrix(this.p1.matrix);
-        rib.p2.applyMatrix(this.p2.matrix);
+        rib.p1.position.copy(this.p1.position);
+        rib.p2.position.copy(this.p2.position);
         rib.endContainer.applyMatrix(this.endContainer.matrix);
         rib.point1Container.applyMatrix(this.point1Container.matrix);
         rib.point2Container.applyMatrix(this.point2Container.matrix);
@@ -392,9 +392,9 @@ Rib.prototype = Object.assign(Object.create(THREE.Object3D.prototype), {
         // reset positions
         this.resetMorphTranslation();
         // translate based on distance ratio
-        let v0 = rib.end.position.distanceTo(new THREE.Vector3());
-        let v1 = rib.p1.position.distanceTo(new THREE.Vector3())/v0;
-        let v2 = rib.p2.position.distanceTo(new THREE.Vector3())/v0;
+        let v0 = this.end.position.distanceTo(new THREE.Vector3());
+        let v1 = this.p1.position.distanceTo(new THREE.Vector3())/v0;
+        let v2 = this.p2.position.distanceTo(new THREE.Vector3())/v0;
         this.end.position.x += bx;
         this.end.position.y += by;
         this.end.position.z += bz;

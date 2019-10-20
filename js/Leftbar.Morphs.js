@@ -73,31 +73,54 @@ Leftbar.Morphs = function (sculptor) {
     biasValueRow = new UI.Row().setDisplay('none');
     morphSettingRow.add(biasValueRow);
     var xBias = new UI.Number().onChange(updateSculpture);
-    biasValueRow.add(xBias);
+    biasValueRow.add(
+        new UI.Text('radial X T').setClass('param').setWidth('50%'),
+        xBias
+    );
     var yBias = new UI.Number().onChange(updateSculpture);
-    biasValueRow.add(yBias);
+    biasValueRow.add(
+        new UI.Text('radial Y T').setClass('param').setWidth('50%'),
+        yBias
+    );
     var zBias = new UI.Number().onChange(updateSculpture);
-    biasValueRow.add(zBias);
+    biasValueRow.add(
+        new UI.Text('axial T').setClass('param').setWidth('50%'),
+        zBias
+    );
 
     rotationValueRow = new UI.Row().setDisplay('none');
     morphSettingRow.add(rotationValueRow);
     var xRotation = new UI.Number().setRange(-30,30).onChange(updateSculpture);
-    rotationValueRow.add(xRotation);
+    rotationValueRow.add(
+        new UI.Text('radial X R').setClass('param').setWidth('50%'),
+        xRotation
+    );
     var yRotation = new UI.Number().setRange(-30,30).onChange(updateSculpture);
-    rotationValueRow.add(yRotation);
+    rotationValueRow.add(
+        new UI.Text('radial Y R').setClass('param').setWidth('50%'),
+        yRotation
+    );
     var zRotation = new UI.Number().onChange(updateSculpture);
-    rotationValueRow.add(zRotation);
+    rotationValueRow.add(
+        new UI.Text('axial R').setClass('param').setWidth('50%'),
+        zRotation
+    );
 
     sizeValueRow = new UI.Row().setDisplay('none');
     morphSettingRow.add(sizeValueRow);
     var xSize = new UI.Number().onChange(updateSculpture);
-    sizeValueRow.add(xSize);
+    sizeValueRow.add(
+        new UI.Text('radial X S').setClass('param').setWidth('50%'),
+        xSize
+    );
     var ySize = new UI.Number().onChange(updateSculpture);
-    sizeValueRow.add(ySize);
+    sizeValueRow.add(
+        new UI.Text('radial Y S').setClass('param').setWidth('50%'),
+        ySize
+    );
 
     let morphRowValueMap = {'bias':biasValueRow,'rotation':rotationValueRow,'size':sizeValueRow};
     let updateMorphUIMap = {'bias':updateBiasUI,'rotation':updateRotationUI,'size':updateSizeUI};
-    let morphOpMap = {'bias':'setMorphTranslation','rotation':'setMorphRotation','size':'setMorphScale'};
     let morphResetMap = {'bias':[0,0,0],'rotation':[0,0,0],'size':[1,1,1]};
 
     // handler
@@ -177,15 +200,18 @@ Leftbar.Morphs = function (sculptor) {
     }
 
     function addKey (key) {
-
         if (!(sculptor.selected instanceof Unit)) {
+            return;
+        }
+        // avoid repeating adding
+        if (sculptor.unitMorphKeys[key].indexOf(sculptor.selected)>=0) {
             return;
         }
         sculptor.unitMorphKeys[key].push(sculptor.selected);
         sort(sculptor.unitMorphKeys[key]);
         sculptor.selected.setMaterial(labeledMaterial);
         updateMorphUIMap[key](sculptor.selected);
-        // morphRowValueMap[key].setDisplay('');
+        signals.setMorphControl.dispatch(key);
     }
 
     function removeKey (key) {
@@ -195,6 +221,7 @@ Leftbar.Morphs = function (sculptor) {
             morphRowValueMap[key].setDisplay('none');
             sculptor.selected.userData.morphTrans[key] = morphResetMap[key];
             updateSculpture(key);
+            signals.removeMorphControl.dispatch();
         }        
     }
     function updateSculpture () {
@@ -225,6 +252,7 @@ Leftbar.Morphs = function (sculptor) {
             sculptor.sculpture.units.children[i][morphOpMap[key]](ns[0],ns[1],ns[2]);
             sculptor.sculpture.units.children[i].generateShape();
         }
+        
     }
 
     function sort (units) {
@@ -241,22 +269,34 @@ Leftbar.Morphs = function (sculptor) {
 
     // subscriber
     signals.objectSelected.add(function(obj){
+        // non-unit will not show morph controls
         if (!(obj instanceof Unit)||sculptor.currentMorph=='') {
             morphSettingRow.setDisplay('none');
             return;
         } else {
             morphSettingRow.setDisplay('');
         }
-        let key = morphMaps[sculptor.currentMorph]
+        let key = morphMaps[sculptor.currentMorph];
         let controls = sculptor.unitMorphKeys[key];
-        let idx = controls.indexOf(obj);
-        if (idx < 0) {
+        let controlIdx = controls.indexOf(obj);
+        let units = sculptor.sculpture.units.children;
+        let unitIdx = units.indexOf(obj);
+        // selected unit is not a control unit of the current morph key
+        // set the 'set as control' checkbox in morphsettingrow as unchecked
+        if (controlIdx < 0) {
             setControl.setValue(false);
-            morphRowValueMap[key].setDisplay('none');
+            setControl.dom.disabled = false;
+            // hide all 3 kinds of morph values
+            for (k in morphMaps) {
+                morphRowValueMap[morphMaps[k]].setDisplay('none');
+            }
         } else {
+            // selected unit is a control unit in the current morph key
+            // enable the 'set as control' checkbox in morphsettingrow
+            // and set it as checked 
             setControl.setValue(true);
             updateMorphUIMap[key](obj);
-            if (idx ==0 || idx == controls.length-1) {
+            if (unitIdx ==0 || unitIdx == units.length-1) {
                 setControl.dom.disabled = true;
             } else {
                 setControl.dom.disabled = false;
@@ -269,6 +309,30 @@ Leftbar.Morphs = function (sculptor) {
                 }
             }
         }
+    });
+
+    signals.unitMorphed.add(function(u){
+        // let key = morphMaps[sculptor.currentMorph];
+        let t = u.userData.morphTrans.bias;
+        let r = u.userData.morphTrans.rotation;
+        let s = u.userData.morphTrans.size;
+        switch(sculptor.currentMorph) {
+            case 'T':
+                xBias.setValue(t[0]);
+                yBias.setValue(t[1]);
+                zBias.setValue(t[2]);
+            break;
+            case 'R':
+                xRotation.setValue(r[0]);
+                yRotation.setValue(r[1]);
+                zRotation.setValue(r[2]);
+            break;
+            case 'S':
+                xSize.setValue(s[0]);
+                ySize.setValue(s[1]);
+            break;
+        }
+        updateSculpture();
     });
 
     return container;

@@ -26,8 +26,8 @@ var Rightbar = function ( sculptor ) {
 	container.add( tabs );
 
     // configs
-    var transformsConfig = new Rightbar.Transforms(sculptor);
-    container.add( transformsConfig );
+    // var transformsConfig = new Rightbar.Transforms(sculptor);
+    // container.add( transformsConfig );
 
     var mechanismConfig = new Rightbar.Mechanism(sculptor);
     container.add( mechanismConfig );
@@ -45,14 +45,14 @@ var Rightbar = function ( sculptor ) {
         mechanismTab.setBorderBottom('solid 1px black')
         sceneTab.setBorderBottom('solid 1px black')
         
-        transformsConfig.setDisplay( 'none' );
+        // transformsConfig.setDisplay( 'none' );
         mechanismConfig.setDisplay( 'none' );
 		sceneConfig.setDisplay( 'none' );
 		switch ( section ) {
 			case 'geometry':
                 geometryTab.dom.classList.add( 'selected' );
                 geometryTab.setBorderBottom('none');
-				transformsConfig.setDisplay( '' );
+				// transformsConfig.setDisplay( '' );
 				break;
 			case 'mechanism':
                 mechanismTab.dom.classList.add( 'selected' );

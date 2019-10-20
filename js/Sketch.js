@@ -20,7 +20,7 @@ function Sketch (name='line', keyPoints=[], parameters, role='sketch', closed=fa
 
     // Inner parameters
     this.pointSize = 1;
-    this.width = 2;
+    this.width = 1.5;
     this.curveResolution = 50;
     if (lineMode == 'gl') {
         this.material = new THREE.LineBasicMaterial({linewidth: this.width,color:lineColors[role]});
@@ -423,9 +423,6 @@ Sketch.prototype = Object.assign(Object.create(THREE.Object3D.prototype), {
             } else {
                 var pt = plane.intersectLine(line,point);
                 if (pt.distanceTo(planeCenter)<dist) {
-                    // old ksbone
-                    // bones.push(new KSBone(planeCenter,pt,plane.normal));
-                    // new rib
                     var end = new THREE.Vector3().subVectors(pt,planeCenter);
                     unit.addRib(end);
                 }
@@ -441,27 +438,32 @@ Sketch.prototype = Object.assign(Object.create(THREE.Object3D.prototype), {
     },
 
     toJSON: function () {
+        // an id is needed for decoding from json
         return {
+            eid: this.uuid,
             name: this.name,
             role: this.role,
             timeOrder: this.timeOrder,
-            colsed: this.closed,
+            closed: this.closed,
+            // parametric curves
             parameters: this.parameters,
+            // free-drawn curves
             keyPoints: this.keyPoints.map(function(v){return v.toArray();}),
             matrix: this.matrix.toArray(),
         }
     },
 
     fromJSON: function (data) {
+        this.eid = data.eid;
         this.name = data.name;
-        this.role = data.role?data.role:'contour';
+        this.role = data.role?data.role:'sketch';
         this.timeOrder = data.timeOrder?data.timeOrder:0;
         this.closed = data.closed;
         this.parameters = data.parameters;
         this.keyPoints = data.keyPoints.map(function(v){return new THREE.Vector3().fromArray(v);});
         this.buildMesh();
         this.applyMatrix(new THREE.Matrix4().fromArray(data.matrix));
-        this.setRole(data.role);
+        this.deselect();
         return this;
     },
 });
