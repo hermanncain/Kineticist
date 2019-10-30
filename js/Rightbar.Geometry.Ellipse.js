@@ -1,4 +1,4 @@
-Leftbar.Geometry.Ellipse = function ( sculptor, object ) {
+Rightbar.Geometry.Ellipse = function ( sculptor, object ) {
     var container = new UI.Row().add(
         new UI.Text('Ellipse').setClass('sect-title')
     );

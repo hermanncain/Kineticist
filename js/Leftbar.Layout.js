@@ -53,7 +53,7 @@ Leftbar.Layout = function (sculptor) {
 
     // 3. Mechanism solving
     var mechContent = new UI.Panel().setClass('content');
-    var solveTrans = new UI.Button().setId('solve-transmissions').onClick(generateTransmissions);
+    var solveTrans = new UI.Button().setId('transmissions').onClick(generateTransmissions);
     // mechContent.add(genMech);
     container.add(
         new UI.Text('Mechanism').setClass('bar-title'),
@@ -63,34 +63,62 @@ Leftbar.Layout = function (sculptor) {
         )
     );
     // mech params
-    let axisDiameter = new UI.Number(10).setRange(5,20).setPrecision(0.1).setMarginLeft('5px');
-    let genMech = new UI.Button('generate mechanisms').setWidth('150px').onClick(function() {
+    // TODO
+    let axisDiameter = new UI.Number(20).setRange(5,20).setPrecision(0.1).setMarginLeft('5px');
+    // TODO
+    // let bearingDiameter = new UI.Number(10).setRange(5,20).setPrecision(0.1).setMarginLeft('5px');
+
+    let genMech = new UI.Button('refine models').setWidth('150px').onClick(function() {
         sculptor.sculpture.axisWidth = axisDiameter.getValue()/200;
         sculptor.sculpture.buildAxle();
         sculptor.sculpture.buildBearings();
     });
     mechContent.add(
-        new UI.Text('axis diameter (mm)').setClass('param').setWidth('100px'),
-        axisDiameter,
+        // new UI.Text('axis diameter (mm)').setClass('param').setWidth('100px'),
+        // axisDiameter,
         // new UI.Panel(),
         // new UI.Text('mechanism').setClass('param'),
         genMech
     )
     // export .stl files
     let expSTL = new UI.Button('export stl').setWidth('150px').onClick(function() {
-        var ks = sculptor.sculpture.clone();        
-        for (let u of ks.units.children) {
-            if (u.rod) {
-                u.rod.clearEnvelope();
-            }
+        let assembly = new THREE.Group();
+        transMat = grayMaterial.clone();
+        transMat.transparent = true;
+        transMat.opacity = 0.5;
+        let cmat = new THREE.MeshNormalMaterial();
+
+        for (let u of sculptor.sculpture.units.children) {
+            let nu = new THREE.Group();
+            assembly.add(nu);
+            
+            let sleeve = u.refineSleeve();
+            sleeve.material = cmat;
+
+            nu.add(sleeve);
             if (u.fork) {
-                u.fork.clearEnvelope();
+                let fork = u.fork.mechanism.clone();
+                fork.applyMatrix(u.fork.matrix);
+                fork.material = transMat;
+                nu.add(fork);
             }
+            if (u.rod) {
+                let rod = u.rod.mechanism.clone();
+                rod.applyMatrix(u.rod.matrix);
+                rod.material = transMat;
+                nu.add(rod);
+            }
+            nu.applyMatrix(u.matrix);
+            nu.updateMatrixWorld();
         }
-        var result = exporter.parse( ks );
-        saveString( result, 'sculpture.stl' );
+        // sculptor.sculpture.visible=false;
+        // sculptor.scenes.layoutScene.add(assembly)
+        var result = exporter.parse( assembly );
+        saveString( result, 'parts.stl' );
+
     });
     mechContent.add(expSTL);
+
     // var axisWidthRow = new UI.Row();
     // container.add(axisWidthRow);
     // axisWidthRow.add(new UI.Text('axis width'));
@@ -148,8 +176,8 @@ Leftbar.Layout = function (sculptor) {
     }
 
     // get scale factor based on unit size and axis k
-    signals.sceneChanged.add(function(name){
-        if(name!='layoutScene'||sculptor.unit.skeleton.children.length==0||!sculptor.axis) return;
+    signals.unitScaleChanged.add(function(name){
+        // if(name!='layoutScene'||sculptor.unit.skeleton.children.length==0||!sculptor.axis) return;
         // restore
         if (sculptor.sculpture.params) {
             gNumber.setValue(sculptor.sculpture.params.n);
@@ -158,7 +186,7 @@ Leftbar.Layout = function (sculptor) {
             return;
         }
         // new
-        let k = getCurvatureData(sculptor.axis.curve,200).radius.min*sculptor.axis.scale.x;
+        let k = getCurvatureData(sculptor.sculpture.axis.curve,200).radius.min*sculptor.sculpture.axis.scale.x;
         let r = sculptor.unit.getMaxRadius()*sculptor.unit.scale.x;
         if (r == 0) {
             gScale.setValue(1);

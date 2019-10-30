@@ -36,10 +36,16 @@ var Viewport = function (sculptor) {
 	var drawCanvas = sculptor.unitCanvas;
 	var castObjects = [];
 
-	if (scene.name == 'unitScene') {
-		castObjects = sculptor.unit.skeleton.children;
-	} else if (scene.name == 'sketchScene') {
-		castObjects = sculptor.sketches;
+	function updateCastObjects () {
+		if (scene.name == 'unit-scene') {
+			castObjects = sculptor.unit.skeleton.children;
+		} else if (scene.name == 'sculpture-scene') {
+			castObjects = [];
+			castObjects.push(...sculptor.sketches);
+			if (sculptor.sculpture.units.children.length>0) {
+				castObjects.push(...sculptor.sculpture.getMechanisms());
+			}
+		}
 	}
 
 	// temporary sketch
@@ -63,26 +69,12 @@ var Viewport = function (sculptor) {
 	});
 	sceneHelpers.add( morphControls );
 	morphControls.addEventListener( 'mouseDown', function () {
-
-		// var object = morphControls.object;
-
-		// objectPositionOnDown = object.position.clone();
-		// objectRotationOnDown = object.rotation.clone();
-		// objectScaleOnDown = object.scale.clone();
 		startMorph = true;
 		controls.enabled = false;
-
 	} );
 	morphControls.addEventListener( 'mouseUp', function () {
 		startMorph = false;
-		// var object = transformControls.object;
-
-		// objectPositionOnDown = object.position.clone();
-		// objectRotationOnDown = object.rotation.clone();
-		// objectScaleOnDown = object.scale.clone();
-
 		controls.enabled = true;
-
 	} );
 
 	var transformControls = new THREE.TransformControls( camera, container.dom );
@@ -369,36 +361,29 @@ var Viewport = function (sculptor) {
 			sculptor.select( null );
 			return;
 		}
-		if (sculptor.currentScene.name == 'layoutScene') {
-			// in layout scene, only unit meshes can be selected
-			for (let its of intersects) {
-				let obj = its.object;
-				if (obj.name =='unit-sleeve' || obj.name == 'unit-bearing' ) {
-					selected = obj.parent;
-					break;
-				} else if (obj.name == 'unit-blade' || obj.name=='unit-accessory') {
-					selected = obj.parent.parent;
-					break;
-				}
-			}
-		} else {
-			for (let its of intersects) {
-				let obj = its.object;
+
+		for (let its of intersects) {
+			let obj = its.object;
+			if (obj.name =='unit-sleeve' || obj.name == 'unit-bearing' ) {
+				selected = obj.parent;
+				break;
+			} else if (obj.name == 'unit-blade' || obj.name=='unit-accessory') {
+				selected = obj.parent.parent;
+				break;
+			} else if (obj instanceof THREE.Points) {
 				// select a point before a curve
-				if (obj instanceof THREE.Points) {
-					selected = obj;
-					break;
-				}
+				selected = obj;
+				break;
 			}
-			if (!selected) {
-				// avoid selection rib curve of unit
-				if (intersects[ 0 ].object.name =='sketch line') {
-					selected = intersects[ 0 ].object.parent;
-					// selected.select();
-				} else if (intersects[ 0 ].object.name =='ribcurve') {
-					selected = intersects[ 0 ].object.parent.parent;
-					// selected.select();
-				}
+		}
+		if (!selected) {
+			// avoid selection rib curve of unit
+			if (intersects[ 0 ].object.name =='sketch line') {
+				selected = intersects[ 0 ].object.parent;
+				// selected.select();
+			} else if (intersects[ 0 ].object.name =='ribcurve') {
+				selected = intersects[ 0 ].object.parent.parent;
+				// selected.select();
 			}
 		}
 		
@@ -558,7 +543,7 @@ var Viewport = function (sculptor) {
 		
 		// selected a sketch
 		if (object instanceof Sketch) {
-			signals.transformModeChanged.dispatch('translate');
+			signals.transformModeChanged.dispatch('rotate');
 		} else if (object instanceof Rib) {
 			signals.transformModeChanged.dispatch('rotate');
 		// selected a point or a unit
@@ -569,9 +554,8 @@ var Viewport = function (sculptor) {
 		}
 	});
 
-	signals.sculptureChanged.add(function(){
-		castObjects = sculptor.sculpture.getMechanisms();
-	});
+	signals.sculptureChanged.add(updateCastObjects);
+
 	signals.transformModeChanged.add( function ( mode ) {
 		
 		transformControls.setMode( mode );
@@ -626,39 +610,51 @@ var Viewport = function (sculptor) {
 	});
 
 	signals.sceneChanged.add(function(name){
-		sculptor.currentScene = sculptor.scenes[name];
+		// if (name == 'unit-scene') {
+		// 	sculptor.currentScene
+		// }
+		// sculptor.currentScene = sculptor.scenes[name];
 		scene = sculptor.currentScene;
-		if (name == 'unitScene') {
-			sculptor.unit.resetTransform();
+		updateCastObjects();
+		if (name == 'unit-scene') {
+			// sculptor.unit.resetTransform();
 			drawCanvas = sculptor.unitCanvas;
-			castObjects = sculptor.unit.skeleton.children;
-			sceneHelpers.children[0].visible = true;
-		} else if (name =='sketchScene') {
-			// transfer sketches
-			for (sketch of sculptor.sculpture.sketches) {
-				scene.add(sketch);
-			}
-			if (sculptor.sculpture.axis) {
-				scene.add(sculptor.sculpture.axis);
-			}
+			// castObjects = sculptor.unit.skeleton.children;
+			// sceneHelpers.children[0].visible = true;
+		} else {
 			drawCanvas = sculptor.sketchCanvas;
-			castObjects = sculptor.sketches;
-			if (sculptor.axis) {
-				castObjects.push(sculptor.axis);
-			}
-			sceneHelpers.children[0].visible = true;
-		} else if (name =='layoutScene') {
-			// transfer sketches
-			if (sculptor.axis) {
-				sculptor.sculpture.setAxis(sculptor.axis);
-				scene.add(sculptor.axis);
-			}
-			for (let contour of sculptor.sculpture.sketches) {
-				scene.add(contour);
-			}
-			castObjects = sculptor.sculpture.getMechanisms();
-			sceneHelpers.children[0].visible = false;
+			// castObjects = [];
+
+			// castObjects.push(...sculptor.sketches);
+			// castObjects.push(...sculptor.sculpture.getMechanisms());
 		}
+		
+		// else if (name =='sketchScene') {
+		// 	// transfer sketches
+		// 	for (sketch of sculptor.sculpture.sketches) {
+		// 		scene.add(sketch);
+		// 	}
+		// 	if (sculptor.sculpture.axis) {
+		// 		scene.add(sculptor.sculpture.axis);
+		// 	}
+		// 	drawCanvas = sculptor.sketchCanvas;
+		// 	castObjects = sculptor.sketches;
+		// 	if (sculptor.axis) {
+		// 		castObjects.push(sculptor.axis);
+		// 	}
+		// 	sceneHelpers.children[0].visible = true;
+		// } else if (name =='layoutScene') {
+		// 	// transfer sketches
+		// 	if (sculptor.axis) {
+		// 		sculptor.sculpture.setAxis(sculptor.axis);
+		// 		scene.add(sculptor.axis);
+		// 	}
+		// 	for (let contour of sculptor.sculpture.sketches) {
+		// 		scene.add(contour);
+		// 	}
+		// 	castObjects = sculptor.sculpture.getMechanisms();
+		// 	sceneHelpers.children[0].visible = false;
+		// }
 		sculptor.deselect();
 		// sculptor.selectedSketch = null;
 		controls.reset();
@@ -667,6 +663,10 @@ var Viewport = function (sculptor) {
 	signals.sceneCleared.add(function(){
 		scene = sculptor.currentScene;
 	});
+
+	signals.sketchChanged.add(function() {
+		updateCastObjects();
+	})
 
     animate();
     

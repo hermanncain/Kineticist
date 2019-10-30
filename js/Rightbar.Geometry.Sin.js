@@ -1,4 +1,4 @@
-Leftbar.Geometry.Sin = function ( sculptor, object ) {
+Rightbar.Geometry.Sin = function ( sculptor, object ) {
     var container = new UI.Row().add(
         new UI.Text('Sine').setClass('sect-title')
     );

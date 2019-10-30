@@ -1,4 +1,4 @@
-Leftbar.Geometry.DecoratedTorusKnot = function ( sculptor, object ) {
+Rightbar.Geometry.DecoratedTorusKnot = function ( sculptor, object ) {
     var container = new UI.Row().add(
         new UI.Text('Decorated Torus Knot').setClass('sect-title')
     );

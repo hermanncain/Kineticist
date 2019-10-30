@@ -1,4 +1,4 @@
-Leftbar.Geometry.Spiral = function ( sculptor, object ) {
+Rightbar.Geometry.Spiral = function ( sculptor, object ) {
     var container = new UI.Row().add(
         new UI.Text('Spiral / Helix').setClass('sect-title')
     );

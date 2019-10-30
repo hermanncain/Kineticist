@@ -9,6 +9,9 @@ function KineticSculpture (axis=null, sketches=[]) {
 
     // input
     this.axis = axis;
+    this.reference = null;
+    this.contours = [];
+
     this.sketches = sketches;
 
     // units
@@ -114,12 +117,11 @@ KineticSculpture.prototype = Object.assign(Object.create(THREE.Object3D.prototyp
         this.axis.sample(params.n);
         let positions = this.axis.samplingPoints;
         let frames = null;
-        if (this.sketches.length==0 || forcePTF==true) {
+        if (this.reference) {
+            frames = this.axis.getReferencedFrames(this.reference,params.n);
+        } else if (this.sketches.length==0 || forcePTF==true) {
             // no sketch, use PTF
             frames = this.axis.ff;
-        } else {
-            // has (a) sketch(es), only use sketch[0] to build frames
-            frames = this.axis.getReferencedFrames(this.sketches[0],params.n);
         }
         for (let i=0;i<positions.length;i++) {
             if (!frames.normals[i]) {
@@ -374,6 +376,10 @@ KineticSculpture.prototype = Object.assign(Object.create(THREE.Object3D.prototyp
     //    mechanism may not collide with them. It depends on junction's phase
 
     buildJoints: function (highlight=false) {
+        // compute phases
+        for (let u of this.units.children) {
+            u.computeBestPhase();
+        }
         let connectivity = true;
         // build
         for (let i=0;i< this.units.children.length-1 ;i++) {
@@ -382,7 +388,9 @@ KineticSculpture.prototype = Object.assign(Object.create(THREE.Object3D.prototyp
             if (u1.isEmpty || u2.isEmpty) {
                 continue;
             }
-
+            if (u1.junctionPhase != u2.junctionPhase) {
+                u1.junctionPhase = u2.junctionPhase;
+            }
             // remember unit's scale!
             let d = u1.position.distanceTo(u2.position)/u1.scale.z;
             let connect = false;
@@ -402,6 +410,11 @@ KineticSculpture.prototype = Object.assign(Object.create(THREE.Object3D.prototyp
                         // TODO: build mechanism later
                         u1.rod.buildMechanism();
                         u2.fork.buildMechanism();
+                        // make rod and fork on the same unit has a phase difference of PI
+                        // if (i % 2 == 1) {
+                        //     u1.rod.rotateZ(Math.PI);
+                        //     u2.fork.rotateZ(Math.PI);
+                        // }
                         if (this.params) {
                             u2.fork.rotateZ(-this.params.torsion/180*Math.PI);
                         }

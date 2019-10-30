@@ -130,6 +130,11 @@ Junction.prototype = Object.assign(Object.create(THREE.Object3D.prototype), {
                 }
             });
         }
+        if (this.plug) {
+            if (this.plug.geometry) {
+                this.plug.geometry.dispose();
+            }
+        }
     },
 
     // build
@@ -168,12 +173,12 @@ Junction.prototype = Object.assign(Object.create(THREE.Object3D.prototype), {
         }
     },
 
-    buildSkeleton: function (phase=Math.PI/2) {
+    buildSkeleton: function (/* phase=Math.PI/2 */) {
         if (this.skeleton) {
             this.skeleton.dispose();
             this.remove(this.skeleton);
         }
-        this.phase=phase;
+        // this.phase=phase;
         let length = this.height / Math.cos(this.theta);
         this.skeleton = new JunctionHelper(this.type,length);
         this.skeleton.position.set(this.rSleeve,0,0);
@@ -202,6 +207,10 @@ Junction.prototype = Object.assign(Object.create(THREE.Object3D.prototype), {
         // build
         let length = this.height / Math.cos(this.theta);
         let r0 = this.rSleeve*0.1;
+        // plug
+        let plug = new THREE.CylinderBufferGeometry(r0,r0,length,32);
+        plug.rotateX(Math.PI/2);
+        plug.translate(0,0,length/2);
         if (this.type=='Rod') {
             let rodGeometry = new THREE.CylinderBufferGeometry(r0,r0,length,8);
             rodGeometry.rotateX(Math.PI/2);
@@ -213,6 +222,7 @@ Junction.prototype = Object.assign(Object.create(THREE.Object3D.prototype), {
             rod.position.copy(this.skeleton.position);
             rod.rotation.copy(this.skeleton.rotation);
             this.mechanism = rod;
+            this.plug = rod;
         } else if (this.type == 'Fork') {
             let forkMinLength = 0.3*length;
             let barGeo = new THREE.CylinderGeometry(r0,r0,forkMinLength);
@@ -236,6 +246,13 @@ Junction.prototype = Object.assign(Object.create(THREE.Object3D.prototype), {
             fork.position.copy(this.skeleton.position);
             fork.rotation.copy(this.skeleton.rotation);
             this.mechanism = fork;
+
+            let forkPlug = new THREE.Mesh(plug.clone(),rodColoredMaterial);
+            forkPlug.visible =false;
+            this.add(forkPlug);
+            forkPlug.position.copy(this.skeleton.position);
+            forkPlug.rotation.copy(this.skeleton.rotation);
+            this.plug = forkPlug;
         }
     },
 
@@ -290,7 +307,7 @@ Junction.prototype = Object.assign(Object.create(THREE.Object3D.prototype), {
         this.rSleeve = rSleeve;
         this.seg = seg;
         this.initialize();
-        this.buildSkeleton(this.phase);
+        this.buildSkeleton();
         this.buildMechanism();
     },
 

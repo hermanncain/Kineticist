@@ -4,91 +4,91 @@
 
 Leftbar.Sketch = function (sculptor) {
 
-    var signals = sculptor.signals;
+    // var signals = sculptor.signals;
 
-    var container = new UI.Panel().setId('leftbar-sketch').setDisplay('none').add(
-        new UI.Text('SKETCHING').setClass('bar-title')
-    );
+    // var container = new UI.Panel().setId('leftbar-sketch').setDisplay('none').add(
+    //     new UI.Text('SKETCHING').setClass('bar-title')
+    // );
 
-    var content= new UI.Panel().setClass('content');
-    container.add(content);
+    // var content= new UI.Panel().setClass('content');
+    // container.add(content);
 
     // var container = new UI.Panel().setMargin('15px');
     // container.add(container);
-    var buttons = [];
+    // var buttons = [];
 
     // 1. hand-drawn curves
-    var freeDrawRow = new UI.Row().add(
-        new UI.Text('Free drawing').setClass('sect-title')
-    );
-    content.add(freeDrawRow);
+    // var freeDrawRow = new UI.Row().add(
+    //     new UI.Text('Free drawing').setClass('sect-title')
+    // );
+    // content.add(freeDrawRow);
 
-    // pointed, no-referenced, can-be-closed
-    var lineButton = new UI.Button().setId('line').onClick(function(){
-        selectButton(lineButton.dom.id);
-    });
-    freeDrawRow.add(lineButton);
-
-    var splineButton = new UI.Button().setId('spline').onClick(function(){
-        selectButton(splineButton.dom.id);
-    });
-    freeDrawRow.add(splineButton);
-    
-    var brush2DButton = new UI.Button().setId('brush2d').onClick(function(){
-        selectButton(brush2DButton.dom.id);
-    });
-    // disable for review
-    // freeDrawRow.add(brush2DButton);
-    
-    // TODO
-    // var brush3DButton = new UI.Button().setId('brush3d').onClick(function(){
-    //     selectButton(brush3DButton.dom.id);
+    // // pointed, no-referenced, can-be-closed
+    // var lineButton = new UI.Button().setId('line').onClick(function(){
+    //     selectButton(lineButton.dom.id);
     // });
-    // freeDrawRow.add(brush3DButton);
+    // freeDrawRow.add(lineButton);
 
-    // container.add(new UI.HorizontalRule());
+    // var splineButton = new UI.Button().setId('spline').onClick(function(){
+    //     selectButton(splineButton.dom.id);
+    // });
+    // freeDrawRow.add(splineButton);
+    
+    // var brush2DButton = new UI.Button().setId('brush2d').onClick(function(){
+    //     selectButton(brush2DButton.dom.id);
+    // });
+    // // disable for review
+    // // freeDrawRow.add(brush2DButton);
+    
+    // // TODO
+    // // var brush3DButton = new UI.Button().setId('brush3d').onClick(function(){
+    // //     selectButton(brush3DButton.dom.id);
+    // // });
+    // // freeDrawRow.add(brush3DButton);
 
-    buttons.push(...[lineButton, splineButton, brush2DButton/* , brush3DButton */]);
+    // // container.add(new UI.HorizontalRule());
 
-    // 2. instanced curves
-    var paramCurveRow = new UI.Row().add(
-        new UI.HorizontalRule(),
-        new UI.Text('Parametric curve').setClass('sect-title')
-    );
-    content.add(paramCurveRow);
-    // parametric, no-referenced, closed
-    var ellipseButton = new UI.Button().setId('ellipse').onClick(function(){
-        var ellipse = new Sketch('Ellipse', [], [0,0,5,5,0,360,0,0]);
-        sculptor.addSketch(ellipse);
-    });
-    paramCurveRow.add(ellipseButton);
+    // buttons.push(...[lineButton, splineButton, brush2DButton/* , brush3DButton */]);
 
-    var sinButton = new UI.Button().setId('sin').onClick(function(){
-        var sin = new Sketch('Sin', [], [1,1,0,0,360]);
-        sculptor.addSketch(sin);
-    });
-    paramCurveRow.add(sinButton);
-    // container.add(new UI.HorizontalRule());
+    // // 2. instanced curves
+    // var paramCurveRow = new UI.Row().add(
+    //     new UI.HorizontalRule(),
+    //     new UI.Text('Parametric curve').setClass('sect-title')
+    // );
+    // content.add(paramCurveRow);
+    // // parametric, no-referenced, closed
+    // var ellipseButton = new UI.Button().setId('ellipse').onClick(function(){
+    //     var ellipse = new Sketch('Ellipse', [], [0,0,5,5,0,360,0,0]);
+    //     sculptor.addSketch(ellipse);
+    // });
+    // paramCurveRow.add(ellipseButton);
 
-    // 3. referenced curves
-    // parametric, referenced, unclosed
-    var spiralButton = new UI.Button().setId('spiral').onClick(function(){
-        var spiral = new Sketch('Spiral',[],[2,0,1,3]);
-        sculptor.addSketch(spiral);
-    });
-    paramCurveRow.add(spiralButton);
+    // var sinButton = new UI.Button().setId('sin').onClick(function(){
+    //     var sin = new Sketch('Sin', [], [1,1,0,0,360]);
+    //     sculptor.addSketch(sin);
+    // });
+    // paramCurveRow.add(sinButton);
+    // // container.add(new UI.HorizontalRule());
+
+    // // 3. referenced curves
+    // // parametric, referenced, unclosed
+    // var spiralButton = new UI.Button().setId('spiral').onClick(function(){
+    //     var spiral = new Sketch('Spiral',[],[2,0,1,3]);
+    //     sculptor.addSketch(spiral);
+    // });
+    // paramCurveRow.add(spiralButton);
 
     //parametric, referenced, closed
-    var torusKnotButton = new UI.Button().setId('torusKnot').onClick(function(){
-        var knot = new Sketch('TorusKnot', [], [5,2,2,3]);
-        sculptor.addSketch(knot);
-    });
-    paramCurveRow.add(torusKnotButton);
-    var decorativeKnotButton = new UI.Button().setId('decorativeKnot').onClick(function(){
-        var knot = new Sketch('DecoratedTorusKnot', [], [2,0.6,5,0.75,10,0.35,5]);
-        sculptor.addSketch(knot);
-    });
-    paramCurveRow.add(decorativeKnotButton);
+    // var torusKnotButton = new UI.Button().setId('torusKnot').onClick(function(){
+    //     var knot = new Sketch('TorusKnot', [], [5,2,2,3]);
+    //     sculptor.addSketch(knot);
+    // });
+    // paramCurveRow.add(torusKnotButton);
+    // var decorativeKnotButton = new UI.Button().setId('decorativeKnot').onClick(function(){
+    //     var knot = new Sketch('DecoratedTorusKnot', [], [2,0.6,5,0.75,10,0.35,5]);
+    //     sculptor.addSketch(knot);
+    // });
+    // paramCurveRow.add(decorativeKnotButton);
     // TODO
     // var importCurveButton = new UI.Button().setId('importCurve').onClick(function(){
         
@@ -151,23 +151,23 @@ Leftbar.Sketch = function (sculptor) {
     // curve roles
     
 
-    function selectButton (mode) {
-        signals.drawModeChanged.dispatch(mode);
-        updateUI();
-    }
+    // function selectButton (mode) {
+    //     signals.drawModeChanged.dispatch(mode);
+    //     updateUI();
+    // }
 
-    function updateUI () {
-        buttons.forEach(b=>{
-            b.dom.classList.remove('selected');
-            if (b.dom.id == sculptor.drawMode) {
-                b.dom.classList.add('selected');
-            }
-        });
-    }
+    // function updateUI () {
+    //     buttons.forEach(b=>{
+    //         b.dom.classList.remove('selected');
+    //         if (b.dom.id == sculptor.drawMode) {
+    //             b.dom.classList.add('selected');
+    //         }
+    //     });
+    // }
 
-    signals.drawModeChanged.add(function (mode) {
-        updateUI();
-    });
+    // signals.drawModeChanged.add(function (mode) {
+    //     updateUI();
+    // });
 
     return container;
 

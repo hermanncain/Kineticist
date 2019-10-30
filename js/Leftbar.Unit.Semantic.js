@@ -3,7 +3,7 @@ Leftbar.Unit.Semantic = function (sculptor) {
     var signals = sculptor.signals;
 
     var container = new UI.Panel().setId('leftbar-unit-semantic').add(
-        new UI.HorizontalRule(),
+        // new UI.HorizontalRule(),
         new UI.Text('semantics').setClass('sect-title')
     );
     container.setDisplay('none');

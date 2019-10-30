@@ -4,7 +4,7 @@
 
 .param-semantics {
     font-size:16px;
-	margin:5px;
+	margin:2px;
 	width:100px;
 }
 #leftbar-unit .Integer {
@@ -13,43 +13,17 @@
 #leftbar-unit .Number {
 	width:40px;
 }
-
-/* draw skeletons */
-#add-end {
-    background-image: url(icons/leftbar/add-end.svg);
-}
-#ca {
-    background-image: url(icons/leftbar/ca.svg);
-}
-#gca {
-    height:30px !important;
-    width:30px !important;
-    background-image: url(icons/leftbar/checked.svg);
-}
-#cca {
-    height:30px !important;
-    width:30px !important;
-    background-image: url(icons/leftbar/forbidden.svg);
-}
-#select-all {
-    background-image: url(icons/leftbar/select-all.svg);
-}
 #polygon {
     background-image: url(icons/leftbar/polygon.svg);
 }
+
 /* accessory config */
 #add-acc {
     height:25px !important;
     width:25px !important;
     background-image:url(icons/leftbar/add-acc.svg);
 }
-/* unit mesh */
-#gen {
-    background-image: url(icons/leftbar/automation.svg);
-}
-#clear {
-    background-image: url(icons/leftbar/clear.svg);
-}
+
 #import-unit {
     background-image: url(icons/menubar/open.svg);
 }

@@ -120,7 +120,7 @@ Rightbar.Scene = function (sculptor) {
     
     // debug
     var debugRow = new UI.Row();
-    container.add(debugRow);
+    // container.add(debugRow);
     // show single unit
     var isShowingSingle = false;
     let showSingle = new UI.Button('single').onClick(function(){
@@ -211,23 +211,23 @@ Rightbar.Scene = function (sculptor) {
     }
 
     function updateSceneBackground(name) {
-        if (sculptor.scenes.unitScene.background.name == name) {
+        if (sculptor.unitScene.background.name == name) {
             return;
         } else {
-            sculptor.switchScene(name);
+            sculptor.changeScene(name);
             updateMatUI();
         }
     }
 
     function updateMatUI () {
         for (let b of sceneBackgroundButtons) {
-            if (b.dom.id == sculptor.scenes.unitScene.background.name) {
+            if (b.dom.id == sculptor.unitScene.background.name) {
                 b.dom.classList.add('selected');
             } else {
                 b.dom.classList.remove('selected');
             }
         }
-        if (sculptor.scenes.unitScene.background.isColor) {
+        if (sculptor.unitScene.background.isColor) {
             sceneBackgroundButtons[0].dom.classList.add('selected');
         } else {
             sceneBackgroundButtons[0].dom.classList.remove('selected');

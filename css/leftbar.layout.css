@@ -22,19 +22,13 @@
     margin-right:10px;
 }
 #layout {
-    /* margin:10px; */
     margin-left:10px !important;
     margin-top:0 !important;
-    /* height:30px !important;
-    width:30px !important; */
-    background-image: url(icons/leftbar/checked.svg);
+    background-image: url(icons/general/confirm.svg);
 }
 #clear-layout {
-    /* margin:10px; */
     margin-top:0 !important;
-    /* height:30px !important;
-    width:30px !important; */
-    background-image: url(icons/leftbar/forbidden.svg);
+    background-image: url(icons/general/cancel.svg);
 }
 #translation-controller {
     margin-left:0 !important;
@@ -55,12 +49,6 @@
     height:30px !important;
 }
 
-/* #leftbar-layout .Button {
-    width:60px;
-    height:30px;
-} */
-#solve-transmissions {
-    /* width:30px !important;
-    height:30px !important; */
-    background-image: url(icons/leftbar/automation.svg);
+#transmissions {
+    background-image: url(icons/leftbar/transmissions.svg);
 }

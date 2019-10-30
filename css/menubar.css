@@ -9,7 +9,7 @@
 	width: calc(100% - 4px);
 	height: 50px;
 	border: solid 2px #333;
-	background-color: #fff;
+	background-color: #eee;
 }
 #menubar .Row {
 	margin-left: 20px !important;
@@ -17,7 +17,7 @@
 	display: inline;
 }
 #menubar .Button {
-	background-color:#fff !important;
+	background-color:#eee !important;
 	height:50px;
 	width:60px;
 }
@@ -38,22 +38,45 @@
 		background-image:url(icons/menubar/save.svg);
 		background-size:70% 70% !important;
 	}
-	#print{
-		background-image:url(icons/menubar/print.svg);
+
+	#unit-scene {
+		background-image:url(icons/menubar/unit-scene.svg);
+	}
+	#sculpture-scene {
+		background-image:url(icons/menubar/sculpture-scene.svg);
 	}
 
 	#unitScene {
-		background-image:url(icons/leftbar/separated.svg);
+		background-image:url(icons/menubar/unit-scene.svg);
 	}
 	#sketchScene {
 		background-image:url(icons/leftbar/brush2d.svg);
 	}
-	#Effect {
-		background-image:url(icons/menubar/effect.svg);
-	}
 	#layoutScene {
 		background-image:url(icons/menubar/mechanism.svg);
 	}
+
+	#translate {
+		background-image:url(icons/menubar/translate.svg);
+	}
+	#rotate {
+		background-image:url(icons/menubar/rotate.svg);
+	}
+	#scale {
+		background-image:url(icons/menubar/scale.svg);
+	}
+	#remove {
+		background-image:url(icons/general/clear.svg);
+	}
+
+	#video {
+		background-image:url(icons/menubar/video.svg);
+	}
+	#github {
+		background-image:url(icons/menubar/github.svg);
+	}
+
+
 
 	#play {
 		background-image:url(icons/menubar/play.svg);
@@ -67,24 +90,4 @@
 	#reset {
 		background-image:url(icons/menubar/reset.svg);
 		background-size:70% 70% !important;
-	}
-
-	#translate {
-		background-image:url(icons/menubar/translate.svg);
-	}
-	#rotate {
-		background-image:url(icons/menubar/rotate.svg);
-	}
-	#scale {
-		background-image:url(icons/menubar/scale.svg);
-	}
-	#duplicate {
-		background-image:url(icons/menubar/duplicate.svg);
-	}
-	#remove {
-		background-image:url(icons/menubar/remove.svg);
-	}
-
-	#github {
-		background-image:url(icons/menubar/github.svg);
 	}

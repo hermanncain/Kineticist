@@ -3,15 +3,15 @@ Rightbar.Mechanism = function (sculptor) {
 
     var container = new UI.Panel().setId('rightbar-mechanism');
     container.setDisplay('none');
-
+    
     // curve roles
     var curveRoleRow = new UI.Row()
     container.add( curveRoleRow );
-    curveRoleRow.add(new UI.Text('Curve role').setFontSize('20px').setWidth('100%'));
+    // curveRoleRow.add(new UI.Text('Curve role').setFontSize('20px').setWidth('100%'));
 
     // roles
     var roleRow = new UI.Row();
-    curveRoleRow.add(roleRow);
+    // curveRoleRow.add(roleRow);
 
     var makeSketchButton = new UI.Button().setId('make-sketch').onClick(function () {
         setRole('sketch');
@@ -238,7 +238,6 @@ Rightbar.Mechanism = function (sculptor) {
             updateOrderUI(obj.timeOrder);
             container.setDisplay( '' );
             sketch = obj;
-            console.log(sculptor.currentScene.name)
             if (sculptor.currentScene.name == 'layoutScene') {
                 updateUI( obj );
             } else {

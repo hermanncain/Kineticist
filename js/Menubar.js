@@ -18,7 +18,7 @@ var Menubar = function ( sculptor ) {
 	container.setId( 'menubar' );
 
 	// TODO: replace text with logo
-	var title = new UI.Text('Cycler').setWidth('100px').setFontSize('40px')
+	var title = new UI.Text('Kineticist').setWidth('150px').setFontSize('40px')
     title.setMarginLeft('10px');
     title.dom.style.verticalAlign='top';
     title.dom.style.fontFamily='Impact';
@@ -79,45 +79,42 @@ var Menubar = function ( sculptor ) {
 
 	// save/download a kinetic sculpture project
 	var saveKS = new UI.Button().setId('save').onClick(function(){
-		// var output = JSON.stringify( sculptor.toJSON(), parseNumber, '\t' );
 		saveString(JSON.stringify( sculptor.toJSON(), parseNumber, '\t' ), 'sculpture.json');
-		// save unit
-		// if (sculptor.currentScene.name == 'unitScene') {
-		// 	if (sculptor.unit.skeleton.children.length==0 && sculptor.unit.upload.children.length==0) {
-		// 		alert('empty unit!');
-		// 		return;
-		// 	} else {
-		// 		var output = sculptor.unit.toJSON();
-		// 		output = JSON.stringify( output, parseNumber, '\t' );
-		// 		saveString(output, 'unit.json');
-		// 	}
-
-		// // save sculpture
-		// } else if (sculptor.currentScene.name == 'layoutScene') {
-		// 	var output = sculptor.toJSON();
-		// 	output = JSON.stringify( output, parseNumber, '\t' );
-		// 	saveString(output, 'sculpture.json');
-		// }
 	});
 	saveKS.dom.title = 'save';
 	fileRow.add( saveKS );
 
-	// building operations
 	var buildRow = new UI.Row();
 	container.add(buildRow);
-	var buildButtons = [];
-	var modes = ['unitScene','sketchScene','layoutScene'];
 
-	(function () {
-		for (let name of modes) {
-			var bt = new UI.Button().setId(name).onClick(function(){
-				selectMode(name);
+	var unitSceneButton = new UI.Button().setId('unit-scene').onClick(function(){
+		switchScene('unit-scene');
+		// signals.sceneChanged.dispatch('unit-scene');
+	});
+	buildRow.add(unitSceneButton);
+
+	var sculptureSceneButton = new UI.Button().setId('sculpture-scene').onClick(function(){
+		switchScene('sculpture-scene');
+		// signals.sceneChanged.dispatch('sculpture-scene');
+	});
+	buildRow.add(sculptureSceneButton);
+
+	// building operations
+	// var buildRow = new UI.Row();
+	// container.add(buildRow);
+	// var buildButtons = [];
+	// var modes = ['unitScene','sketchScene','layoutScene'];
+
+	// (function () {
+	// 	for (let name of modes) {
+	// 		var bt = new UI.Button().setId(name).onClick(function(){
+	// 			selectMode(name);
                 
-            });
-            buildRow.add(bt);
-            buildButtons.push(bt);
-		}
-	})();
+    //         });
+    //         buildRow.add(bt);
+    //         buildButtons.push(bt);
+	// 	}
+	// })();
 
 	// simulation operations
 	var controlRow = new UI.Row();
@@ -186,12 +183,17 @@ var Menubar = function ( sculptor ) {
 	});
 	transformRow.add(remove);
 
+	// watch tutorial videos
+	var videos = new UI.Button().setId('video').setPosition('absolute').setRight('80px').onClick(function(){
+		window.open('https://github.com/hermanncain/Cycler');
+	});
+	container.add( videos );
 
 	// get help on github
-	// disable for review
-	// var github = new UI.Button().setId('github').setPosition('absolute').setRight('20px').onClick(function(){
-	// 	window.open('https://github.com/hermanncain/Cycler');
-	// });
+	// disable for peer review
+	var github = new UI.Button().setId('github').setPosition('absolute').setRight('20px').onClick(function(){
+		window.open('https://github.com/hermanncain/Cycler');
+	});
 	// container.add( github );
 
 	// for download
@@ -199,44 +201,6 @@ var Menubar = function ( sculptor ) {
 	link.id = 'fordld';
 	link.style.display = 'none';
 	document.body.appendChild( link );
-
-	function selectMode(name) {
-		if (name=='layoutScene') {
-			if (!sculptor.sketches.length) {
-				alert('no sketch!');
-				return;
-			}
-			if (sculptor.axis==null) {
-				// noted for review
-				// let allOrdered = sculptor.sketches.reduce(function(a,b){
-				// 	return a.timeOrder || b.timeOrder;
-				// });
-				// let allUnordered = sculptor.sketches.reduce(function(a,b){
-				// 	return a.timeOrder && b.timeOrder;
-				// });
-				// // if all sketches are time-ordered, keep null axis
-				// // else set sketch[0] as axis
-				// // then make all sketches 0 ordered
-				// // and attach them to the sculpture as contours
-				// if (!(allOrdered && allUnordered)) {
-				// 	sculptor.setRole(sculptor.sketches[0],'axis');
-				// 	for (let i=1;i<sculptor.sketches.length;i++) {
-				// 		sculptor.setRole(sculptor.sketches[i],'contour');
-				// 		sculptor.sketches[i].setTimeOrder(0);
-				// 	}
-				// }
-				sculptor.setRole(sculptor.sketches[0],'axis');
-			}
-		}
-		for (let b of buildButtons) {
-            if (b.dom.id == name) {
-				b.dom.classList.add('selected');
-            } else {
-				b.dom.classList.remove('selected');
-            }
-		}
-		signals.sceneChanged.dispatch(name);
-	}
 
 	signals.transformModeChanged.add(function(mode){
 		for (bt of transformButtons) {
@@ -259,8 +223,8 @@ var Menubar = function ( sculptor ) {
 			translate.setDisplay('');
 			rotate.setDisplay('none');
 			scale.setDisplay('none');
-			// remove.setDisplay('');
-		} else if (object instanceof Rib) {
+			remove.setDisplay('none');
+		} else if (object instanceof Rib || object instanceof Sketch) {
 			translate.setDisplay('none');
 			rotate.setDisplay('');
 			scale.setDisplay('');
@@ -268,24 +232,18 @@ var Menubar = function ( sculptor ) {
 		}
 	});
 
-	// motion simulation buttons are visible only in the layout scene
-	signals.sceneChanged.add(function(name){
-		if (name == 'layoutScene') {
-			controlRow.setDisplay('');
+	function switchScene (name) {
+		if (name == 'unit-scene') {
+			sculptureSceneButton.dom.classList.remove('selected');
+			unitSceneButton.dom.classList.add('selected');	
 		} else {
-			controlRow.setDisplay('none');
+			sculptureSceneButton.dom.classList.add('selected');
+			unitSceneButton.dom.classList.remove('selected');	
 		}
-		for (let b of buildButtons) {
-            if (b.dom.id == name) {
-				b.dom.classList.add('selected');
-            } else {
-				b.dom.classList.remove('selected');
-            }
-		}
-	});
+		sculptor.switchScene(name);
+	}
 
-	// initialize
-	selectMode(sculptor.currentScene.name);
+	switchScene (sculptor.currentScene.name);
 
 	return container;
 

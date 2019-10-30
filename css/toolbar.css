@@ -1,0 +1,94 @@
+/* 
+ * Toolbar
+ */
+
+#toolbar {
+	position: absolute;
+	top: 54px;
+    left: 220px;
+    width: calc(100% - 470px);
+	height: 50px;
+    box-shadow: 0px 5px 2px #888;
+    background-color: #eee;
+    border-radius: 0 0 10px 10px;
+}
+#toolbar .Button {
+    margin:5px;
+    height:40px;
+	width:40px;
+	border: solid 2px #333;
+	border-radius: 5px;
+	background-size: 80% 80%;
+	background-position: center;
+	background-color: #ccc;
+}
+#toolbar .Input {
+    margin-left: 20px;
+    border: solid 1px #000 !important;
+}
+#toolbar button:hover {
+	background-color: #fff;
+}
+#toolbar button.selected {
+	background-color: #fff;
+}
+
+#add-end {
+    background-image: url(icons/toolbar/add-end.svg);
+}
+#ca {
+    background-image: url(icons/toolbar/ca.svg);
+}
+#gca {
+    background-image: url(icons/general/confirm.svg);
+}
+#cca {
+    background-image: url(icons/general/cancel.svg);
+}
+#select-all {
+    background-image: url(icons/toolbar/select-all.svg);
+}
+#gen {
+    margin-left:40px !important;
+    background-image: url(icons/general/confirm.svg);
+}
+#clear {
+    background-image: url(icons/general/clear.svg);
+}
+
+#line {
+    background-image:url(icons/toolbar/line.svg);
+}
+#spline {
+    background-image:url(icons/toolbar/spline.svg);
+}
+#brush2d {
+    background-image:url(icons/toolbar/brush2d.svg);
+}
+#ellipse {
+    margin-left:40px !important;
+    background-image:url(icons/toolbar/ellipse.svg);
+}
+#sin {
+    background-image:url(icons/toolbar/sin.svg);
+}
+#spiral {
+    background-image:url(icons/toolbar/spiral.svg);
+}
+#torusKnot {
+    background-image:url(icons/toolbar/torusknot.svg);
+}
+#decorativeKnot {
+    background-image:url(icons/toolbar/decorativeknot.svg);
+}
+
+#set-axis {
+    margin-left:40px !important;
+    background-image:url(icons/toolbar/axis.svg);
+}
+#set-reference {
+    background-image:url(icons/toolbar/reference.svg);
+}
+#set-contour {
+    background-image:url(icons/toolbar/contour.svg);
+}

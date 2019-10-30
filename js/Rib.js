@@ -446,6 +446,16 @@ Rib.prototype = Object.assign(Object.create(THREE.Object3D.prototype), {
         }
     },
 
+    getInstallAngle: function (r) {
+        let pts = this.curve.getPoints(100);
+        for (let p of pts) {
+            p.applyMatrix4(this.matrix);
+            if (p.x**2+p.y**2>r) {
+                return Math.atan2(p.y,p.x);
+            }
+        }
+    },
+
     // data transfer
 
     toJSON: function () {

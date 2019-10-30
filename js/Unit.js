@@ -11,6 +11,7 @@
  *  - rod
  *  - fork
  */
+
 function Unit (shape='propeller') {
 
     THREE.Object3D.call(this);
@@ -532,8 +533,7 @@ Unit.prototype = Object.assign(Object.create(THREE.Object3D.prototype), {
                 dec.scale.set(s,s,s);
                 dec.layers.set(4);
                 dec.name = 'unit-accessory';
-                let pos = rib.curve.getPoint(t).applyMatrix4(rib.curveContainer.matrix).applyMatrix4(rib.matrix);
-                dec.position.copy(pos);
+                dec.position.copy(marker.position.clone().applyMatrix4(rib.matrix));
                 let tangent = rib.getTNB(t);
                 let angle = Math.atan2(tangent.y,tangent.x);
                 dec.rotateZ(angle+Math.PI);
@@ -570,11 +570,41 @@ Unit.prototype = Object.assign(Object.create(THREE.Object3D.prototype), {
         this.add(this.bearing);
     },
 
+    computeBestPhase: function () {
+        // sort blades' install angles
+        let ribAngles = [];
+        for (let rib of this.skeleton.children) {
+            let a = rib.getInstallAngle(this.userData.sleeve.rInner);
+            a = a<0?a+Math.PI*2:a;
+            ribAngles.push(a);
+        }
+        ribAngles = ribAngles.sort(function(a,b){
+            return a-b;
+        });
+
+        // get the max interaval
+        let maxAngle = 0;
+        let idx = 0;
+        for (let i=0;i<ribAngles.length-1;i++) {
+            let diff = ribAngles[i+1]-ribAngles[i];
+            if (diff > maxAngle) {
+                maxAngle = diff;
+                idx = i;
+            }
+        }
+        let circleAngle = Math.PI*2-ribAngles[ribAngles.length-1]+ribAngles[0];
+        if ( circleAngle > maxAngle) {
+            maxAngle = circleAngle;
+            idx = ribAngles.length-1;
+        }
+        this.junctionPhase = ribAngles[idx] + maxAngle/2;
+    },
+
     buildRod: function (theta=Math.PI/3,height) {
         this.clearRod();
         let r = this.userData.sleeve.rOut;
         height = height ? height : 2 * r;
-        this.rod = new Junction('Rod',theta,height,0,r);
+        this.rod = new Junction('Rod',theta,height,this.junctionPhase,r);
         this.add(this.rod);
         this.rod.updateMatrixWorld();
     },
@@ -591,7 +621,7 @@ Unit.prototype = Object.assign(Object.create(THREE.Object3D.prototype), {
         this.clearFork();
         let r = this.userData.sleeve.rOut;
         height = height ? height : 2 * r;
-        this.fork = new Junction('Fork',theta,height,0,r);
+        this.fork = new Junction('Fork',theta,height,this.junctionPhase,r);
         this.add(this.fork);
         this.fork.updateMatrixWorld();
     },
@@ -627,10 +657,76 @@ Unit.prototype = Object.assign(Object.create(THREE.Object3D.prototype), {
         if (this.accessories) {
             mech.push(this.accessories);
         }
-        if (this.polygon) {
-            mech.push(this.polygon);
-        }
+        // if (this.polygon) {
+        //     mech.push(this.polygon);
+        // }
         return mech;
+    },
+
+    refineSleeve: function () {
+        // generate a bigger sleeve
+        let sleeveOutRadius = this.userData.sleeve.rOut * 1.5;
+        let sleeveThickness = this.userData.sleeve.thickness * 1.5;
+        let sleeve = new THREE.Mesh(new THREE.CylinderGeometry(sleeveOutRadius,sleeveOutRadius,sleeveThickness,32,1));
+        sleeve.rotateX(Math.PI/2);
+        sleeve.updateMatrix();
+        this.add(sleeve);
+        let sleeveCSG = CSG.fromMesh(sleeve);
+
+        // dig the bearing staged hole
+        let sleeveInRadius = this.userData.sleeve.rInner*1.3;
+        let axleHole = new THREE.Mesh(new THREE.CylinderGeometry(sleeveInRadius*0.8,sleeveInRadius*0.8,sleeveThickness,32,1));
+        let bearingHole = new THREE.Mesh(new THREE.CylinderGeometry(sleeveInRadius,sleeveInRadius,sleeveThickness*0.8,32,1));
+        axleHole.rotateX(Math.PI/2);
+        bearingHole.rotateX(Math.PI/2);
+        bearingHole.translateY(sleeveThickness*0.2);
+        axleHole.updateMatrix();
+        bearingHole.updateMatrix();
+        this.add(axleHole);
+        this.add(bearingHole);
+        let axleHoleCSG = CSG.fromMesh(axleHole);
+        let bearingHoleCSG = CSG.fromMesh(bearingHole);
+        sleeveCSG = sleeveCSG.subtract(axleHoleCSG).subtract(bearingHoleCSG)
+
+        // dig blade holes
+        let ribs = new THREE.Group();
+        this.add(ribs);
+        for (let rib of this.skeleton.children) {
+            let t = rib.getInstallAngle(sleeveInRadius);
+            let hole = new THREE.Mesh(new THREE.CylinderGeometry(0.15,0.15,sleeveOutRadius,32));
+            hole.rotateZ(t-Math.PI/2);
+            hole.translateY(sleeveOutRadius/2+sleeveInRadius+0.1);
+            ribs.add(hole);
+            hole.updateMatrixWorld();
+            let holeCSG = CSG.fromMesh(hole);
+            sleeveCSG = sleeveCSG.subtract(holeCSG);
+        }
+
+        // dig the transmission holes
+        if (this.rod) {
+            let rodPart = this.rod.plug.clone();
+            rodPart.applyMatrix(this.rod.matrix);
+            let rodCSG = CSG.fromMesh(rodPart);
+            sleeveCSG = sleeveCSG.subtract(rodCSG);
+        }
+        if (this.fork) {
+            let forkPart = this.fork.plug.clone();
+            forkPart.applyMatrix(this.fork.matrix);
+            let forkCSG = CSG.fromMesh(forkPart);
+            sleeveCSG = sleeveCSG.subtract(forkCSG);
+        }
+
+        let sleevePart = CSG.toMesh(sleeveCSG,sleeve.matrix);
+        // do not forget to dispose the addings
+        this.remove(sleeve,axleHole,bearingHole);
+        sleeve.geometry.dispose();
+        axleHole.geometry.dispose();
+        bearingHole.geometry.dispose();
+        this.remove(ribs);
+        for (rib of ribs.children) {
+            rib.geometry.dispose();
+        }
+        return sleevePart;
     },
 
     toJSON: function () {

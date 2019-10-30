@@ -12,6 +12,8 @@
 	background-color: #fff;
 	border-left: solid 2px #333;
 	border-right: solid 2px #333;
+	overflow-x:hidden;
+	overflow-y:auto;
 }
 #rightbar .Number{
 	width: 50px;
@@ -23,7 +25,7 @@
 	height:50px;
 	width:50px;
 	margin:5px;
-	border: solid 1px white;
+	border: solid 1px #eee;
 
 }
 #rightbar button:hover {
@@ -35,123 +37,33 @@
 	border: solid 1px black;
 }
 
-
-/* rightbar tabs*/
-#rightbar #rightbar-tabs {
-	width:100%;
-	height:50px;
-	margin-bottom:0 !important;
-}
-#rightbar #rightbar-tabs .Button{
-	background-position: center;
-	background-color: #ddd;
-	background-repeat: no-repeat;
-	background-size:80% 80%;
-	width:30%;
-	height:40px;
-	border-bottom:none;
-	border-top: solid 1px #888;
-	border-left: solid 1px #888;
-	border-right: solid 1px #888;
-	border-radius: 10px 10px 0 0;
-	margin:0;
-}
-#rightbar #rightbar-tabs button:hover {
-	background-color: #fff;
-}
-#rightbar #rightbar-tabs button.selected {
-	background-color: #fff;
-}
-	#scene-tab{
-		background:url(icons/rightbar/scene-tab.svg);
-	}
-	#geometry-tab{
-		background:url(icons/rightbar/geometry-tab.svg);
-	}
-	#mechanism-tab{
-		background:url(icons/rightbar/mechanism-tab.svg);
-	}
-
-
-/* rightbar scene tab page */
-#rightbar-scene {
-	margin:10px;
-	margin-top:0;
-}
-#rightbar-scene .Row{
-	margin:0 !important;
-}
-	#point-layer {
-		background-size: 20% 20% !important;
-		background-image:url(icons/leftbar/dot.svg);
-	}
-	#line-layer {
-		background-image:url(icons/leftbar/line.svg);
-	}
-	#bone-layer {
-		background-image:url(icons/rightbar/skeleton.svg);
-	}
-	#mesh-layer {
-		background-image:url(icons/rightbar/object.svg);
-	}
-	#env-layer {
-		background-image:url(icons/rightbar/envelope.svg);
-	}
-	#helper-layer {
-		background-image:url(icons/rightbar/helper.svg);
-	}
-	#scene1{
-		background-image: url(../cubemaps/scene1/nz.jpg);
-	}
-	#scene2{
-		background-image: url(../cubemaps/scene2/nz.jpg);
-	}
-
-/* rightbar transform tab page */
-#rightbar-transforms .Integer{
-	width:40px;
-}
-#rightbar-transforms .Number{
-	width:40px;
+#rightbar-geometry .Text{
+	font-size: 14px;
+	width:70px;
 }
 
-/* rightbar mechanism tab page */
-#rightbar-mechanism {
-	margin:10px;
-	margin-top:0;
+#point-layer {
+	background-size: 20% 20% !important;
+	background-image:url(icons/rightbar/dot.svg);
 }
-	#make-sketch {
-		background-image:url(icons/leftbar/spline.svg);
-	}
-	#make-axis {
-		background-image:url(icons/rightbar/axis.svg);
-	}
-	#make-contour {
-		background-image:url(icons/leftbar/blade.svg);
-	}
-	#append {
-		background-image:url(icons/rightbar/tree.svg);
-	}
-	#attach {
-		background-image:url(icons/rightbar/tree.svg);
-		transform:rotate(180deg);
-	}
-	#detach {
-		background-image:url(icons/rightbar/detach.svg);
-		transform:rotate(180deg);
-	}
-	#bone {
-		background-image:url(icons/rightbar/bone.svg);
-	}
-	#skeleton {
-		background-image:url(icons/rightbar/skeleton.svg);
-	}
-	#clear-skeleton {
-		background-image:url(icons/leftbar/clear.svg);
-	}
-	#outline {
-		background-image:url(icons/leftbar/blade.svg);
-	}
-	#clear-outline {
-		background-image:url(icons/leftbar/clear.svg);
-	}
+#line-layer {
+	background-image:url(icons/toolbar/line.svg);
+}
+#bone-layer {
+	background-image:url(icons/rightbar/skeleton.svg);
+}
+#mesh-layer {
+	background-image:url(icons/rightbar/object.svg);
+}
+#env-layer {
+	background-image:url(icons/rightbar/envelope.svg);
+}
+#helper-layer {
+	background-image:url(icons/rightbar/helper.svg);
+}
+#scene1{
+	background-image: url(../cubemaps/scene1/nz.jpg);
+}
+#scene2{
+	background-image: url(../cubemaps/scene2/nz.jpg);
+}

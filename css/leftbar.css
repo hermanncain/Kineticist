@@ -4,10 +4,10 @@
 
 #leftbar {
 	position: absolute;
-	bottom: 27px;
+	top: 54px;
 	left: 0;
 	width: 180px;
-	height: calc(100% - 81px);
+	height: calc(100% - 82px);
 	background-color: #fff;
 	border-left: solid 2px #333;
 	border-right: solid 2px #333;

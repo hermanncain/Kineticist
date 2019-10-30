@@ -5,12 +5,13 @@
 		<meta charset="utf-8">
 		<link href="css/main.css" rel="stylesheet" />
 		<link href="css/menubar.css" rel="stylesheet" />
+		<link href="css/toolbar.css" rel="stylesheet" />
 		<link href="css/leftbar.css" rel="stylesheet" />
 		<link href="css/leftbar.unit.css" rel="stylesheet" />
-		<link href="css/leftbar.sketch.css" rel="stylesheet" />
 		<link href="css/leftbar.layout.css" rel="stylesheet" />
 		<link href="css/rightbar.css" rel="stylesheet" />
-		<script src="build/three.js"></script>
+		<script src="build/three.min.js"></script>
+		<script src="build/CSG.js"></script>
 		<script src="build/TrackballControls.js"></script>
 		<script src="build/TransformControls.js"></script>
 		<script src="build/MorphControls.js"></script>
@@ -34,24 +35,24 @@
 		<script src="js/Sculptor.js"></script>
 		<script src="js/Menubar.js"></script>
 		<script src="js/Viewport.js"></script>
+		<script src="js/Toolbar.js"></script>
 		<script src="js/Leftbar.js"></script>
 		<script src="js/Leftbar.Unit.js"></script>
 		<script src="js/Leftbar.Unit.Semantic.js"></script>
 		<script src="js/Leftbar.Unit.Blade.js"></script>
 		<script src="js/Leftbar.Unit.Accessory.js"></script>
-		<script src="js/Leftbar.Sketch.js"></script>
-		<script src="js/Leftbar.Geometry.js"></script>
-		<script src="js/Leftbar.Geometry.Ellipse.js"></script>
-		<script src="js/Leftbar.Geometry.Sin.js"></script>
-		<script src="js/Leftbar.Geometry.Spiral.js"></script>
-		<script src="js/Leftbar.Geometry.TorusKnot.js"></script>
-		<script src="js/Leftbar.Geometry.DecoratedTorusKnot.js"></script>
+		<!-- <script src="js/Leftbar.Sketch.js"></script> -->
 		<script src="js/Leftbar.Layout.js"></script>
 		<script src="js/Leftbar.Morphs.js"></script>
 		<script src="js/Rightbar.js"></script>
+		<script src="js/Rightbar.Geometry.js"></script>
+		<script src="js/Rightbar.Geometry.Ellipse.js"></script>
+		<script src="js/Rightbar.Geometry.Sin.js"></script>
+		<script src="js/Rightbar.Geometry.Spiral.js"></script>
+		<script src="js/Rightbar.Geometry.TorusKnot.js"></script>
+		<script src="js/Rightbar.Geometry.DecoratedTorusKnot.js"></script>
 		<script src="js/Rightbar.Scene.js"></script>
 		<script src="js/Rightbar.Mechanism.js"></script>
-		<script src="js/Rightbar.Transforms.js"></script>
 		<script src="js/Bottombar.js"></script>
 	</head>
 	<body>
@@ -64,12 +65,15 @@
 			// Core components
 			var sculptor = new Sculptor();
 
-			var menubar = new Menubar(sculptor);
-			document.body.appendChild( menubar.dom );
-
 			// viewport
 			var viewport = new Viewport(sculptor);
 			document.body.appendChild( viewport.dom );
+
+			var menubar = new Menubar(sculptor);
+			document.body.appendChild( menubar.dom );
+
+			var toolbar = new Toolbar(sculptor);
+			document.body.appendChild( toolbar.dom );
 
 			var leftbar = new Leftbar(sculptor);
 			document.body.appendChild( leftbar.dom );

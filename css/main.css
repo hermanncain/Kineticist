@@ -54,14 +54,17 @@ select:hover {
 	left: 0;
 	width: calc(100% - 4px);
 	height: 25px;
+	background-color: #eee;
 	border: solid 2px #333;
 }
 #viewport {
 	position: absolute;
-	bottom: 27px;
+	/* bottom: 27px; */
+	top: 0;
 	left: 0;
 	width: 100%;
-	height: calc(100% - 81px);
+	/* height: calc(100% - 131px); */
+	height: 100%;
 }
 
 /*
