@@ -194,7 +194,7 @@ var Menubar = function ( sculptor ) {
 	var github = new UI.Button().setId('github').setPosition('absolute').setRight('20px').onClick(function(){
 		window.open('https://github.com/hermanncain/Cycler');
 	});
-	// container.add( github );
+	container.add( github );
 
 	// for download
 	var link = document.createElement( 'a' );

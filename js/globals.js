@@ -114,7 +114,7 @@ function buildAccessoryGeometry(type){
             return leafGeometry.clone();
         // TODO
         default:
-        break;
+            return new THREE.CylinderGeometry(1,1,0.1,16);
     }
 }
 

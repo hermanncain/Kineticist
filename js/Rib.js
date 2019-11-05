@@ -524,7 +524,7 @@ Rib.prototype = Object.assign(Object.create(THREE.Object3D.prototype), {
     },
 });
 
-function Marker (pos=1,sca=1,shape='plate') {
+function Marker (pos=1,sca=1,shape=0) {
     THREE.Object3D.call(this);
     // data
     this.pos = pos;
@@ -551,7 +551,7 @@ Marker.prototype = Object.assign(Object.create(THREE.Object3D.prototype), {
         this.pt.geometry.dispose();
     },
 
-    update: function (pos=1,sca=1,shape='plate') {
+    update: function (pos=1,sca=1,shape=0) {
         this.pos = pos;
         this.sca = sca;
         this.shape = shape;

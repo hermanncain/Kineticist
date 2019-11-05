@@ -1,4 +1,4 @@
-Leftbar.Morphs = function (sculptor) {
+Leftbar.Sculpture.Morphs = function (sculptor) {
     var signals = sculptor.signals;
 
     let morphMaps = {'T':'bias','R':'rotation','S':'size'};

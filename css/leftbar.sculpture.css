@@ -1,18 +1,18 @@
 /*
  * layout scene
  */
-#leftbar-layout .Text{
+#leftbar-sculpture .Text{
 	font-size:15px;
 	width:80px;
 }
-#leftbar-layout .Integer {
+#leftbar-sculpture .Integer {
 	width:40px;
 }
-#leftbar-layout .Number {
+#leftbar-sculpture .Number {
 	width:30px;
 	margin-left:20px;
 }
-#leftbar-layout .Button {
+#leftbar-sculpture .Button {
 	height:30px;
     width:30px;
 }
@@ -29,6 +29,15 @@
 #clear-layout {
     margin-top:0 !important;
     background-image: url(icons/general/cancel.svg);
+}
+#skeleton {
+    background-image: url(icons/general/confirm.svg);
+}
+#clear-skeleton{
+    background-image: url(icons/general/cancel.svg);
+}
+#generate-unit{
+    background-image:url(icons/menubar/unit-scene.svg);
 }
 #translation-controller {
     margin-left:0 !important;

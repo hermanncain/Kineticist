@@ -3,16 +3,16 @@
  * @author hermanncain / https://hermanncain.github.io/
  */
 
-function KineticSculpture (axis=null, sketches=[]) {
+function KineticSculpture (axis=null, contours=[]) {
 
     THREE.Object3D.call(this);
 
     // input
     this.axis = axis;
     this.reference = null;
-    this.contours = [];
+    // this.contours = [];
 
-    this.sketches = sketches;
+    this.contours = contours;
 
     // units
     this.unit = null;
@@ -35,8 +35,8 @@ KineticSculpture.prototype = Object.assign(Object.create(THREE.Object3D.prototyp
 
     clone: function () {
         let axis = this.axis.clone();
-        let sketches = this.sketches.map(function(s){return s.clone();});
-        let ks = new KineticSculpture(axis,sketches);
+        let contours = this.contours.map(function(s){return s.clone();});
+        let ks = new KineticSculpture(axis,contours);
         ks.unit = this.unit.clone();
         for (let u of this.units.children) {
             ks.units.add(u.clone());
@@ -76,8 +76,8 @@ KineticSculpture.prototype = Object.assign(Object.create(THREE.Object3D.prototyp
     },
 
     addContour: function (obj){
-        if (this.sketches.indexOf(obj)<0) {
-            this.sketches.push(obj);
+        if (this.contours.indexOf(obj)<0) {
+            this.contours.push(obj);
         }
         if (obj instanceof Sketch) {
             obj.deselect();
@@ -90,17 +90,17 @@ KineticSculpture.prototype = Object.assign(Object.create(THREE.Object3D.prototyp
             obj.deselect();
             obj.setRole('sketch');
         }
-        this.sketches.splice(this.sketches.indexOf(obj),1);
+        this.contours.splice(this.contours.indexOf(obj),1);
     },
 
     clearContours: function () {
-        for (let obj of this.sketches) {
+        for (let obj of this.contours) {
             if (obj instanceof Sketch) {
                 obj.deselect();
                 obj.setRole('sketch');
             }
         }
-        this.sketches = [];
+        this.contours = [];
     },
 
     // Unit layout
@@ -119,7 +119,7 @@ KineticSculpture.prototype = Object.assign(Object.create(THREE.Object3D.prototyp
         let frames = null;
         if (this.reference) {
             frames = this.axis.getReferencedFrames(this.reference,params.n);
-        } else if (this.sketches.length==0 || forcePTF==true) {
+        } else if (this.contours.length==0 || forcePTF==true) {
             // no sketch, use PTF
             frames = this.axis.ff;
         }
@@ -134,7 +134,7 @@ KineticSculpture.prototype = Object.assign(Object.create(THREE.Object3D.prototyp
             let m = new THREE.Matrix4().makeBasis(frames.normals[i],frames.binormals[i],frames.tangents[i]).multiplyScalar(params.scale).setPosition(positions[i]);
             u.applyMatrix(m);
             u.updatePointSize();
-            if (this.sketches.length==0 && params.torsion!=0) {
+            if (this.contours.length==0 && params.torsion!=0) {
                 u.rotateZ(params.torsion/180*Math.PI*i);
             }
             // store rotation
@@ -229,9 +229,9 @@ KineticSculpture.prototype = Object.assign(Object.create(THREE.Object3D.prototyp
         this.setSleeveRadii();
         this.axis.sample(params.n);
         this.layout(this.unit,params,true);
-        
-        // get all intersections of all sketches with axis normal planes
-        let samplingEnds = this.axis.getNormalIntersectionsWithCurves(this.sketches,dist);
+
+        // get all intersections of all contours with axis normal planes
+        let samplingEnds = this.axis.getNormalIntersectionsWithCurves(this.contours,dist);
         for (i=0;i<freq;i++) {
             let ends = samplingEnds[i];
             let unit = this.units.children[i];
@@ -246,7 +246,7 @@ KineticSculpture.prototype = Object.assign(Object.create(THREE.Object3D.prototyp
                 unit.addRib(point);
             }
             unit.buildSleeveRing();
-            unit.updatePointSize(0.1);
+            unit.updatePointSize(0.2);
         }
 
     },
@@ -295,8 +295,8 @@ KineticSculpture.prototype = Object.assign(Object.create(THREE.Object3D.prototyp
         this.axis.sample(params.n);
         this.layout(this.unit,params,true);
         
-        // get all intersections of all sketches with axis normal planes
-        let samplingEnds = this.axis.getNormalIntersectionsWithCurves([this.sketches[0]],5);
+        // get all intersections of all contours with axis normal planes
+        let samplingEnds = this.axis.getNormalIntersectionsWithCurves([this.contours[0]],5);
         // for (i=0;i<20;i++) {
         //     let ends = samplingEnds[i];
         //     let unit = this.units.children[i];
@@ -485,12 +485,12 @@ KineticSculpture.prototype = Object.assign(Object.create(THREE.Object3D.prototyp
     toJSON: function () {
         let axisId = this.axis?this.axis.uuid:null;
         let sketchIds = [];
-        for (let sketch of this.sketches) {
+        for (let sketch of this.contours) {
             sketchIds.push(sketch.uuid);
         }
 
         return {
-            // save the e-ids of axis and sketches
+            // save the e-ids of axis and contours
             axisId,
             sketchIds,
             // save each unit's morph transformations

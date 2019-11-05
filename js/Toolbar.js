@@ -132,7 +132,7 @@ var Toolbar = function ( sculptor ) {
         var knot = new Sketch('DecoratedTorusKnot', [], [2,0.6,5,0.75,10,0.35,5]);
         sculptor.addSketch(knot);
     });
-    // sketchRow.add(decorativeKnotButton);
+    sketchRow.add(decorativeKnotButton);
 
     var roleButtonRow = new UI.Row().setDisplay('none');
     sketchRow.add(roleButtonRow);
@@ -147,22 +147,32 @@ var Toolbar = function ( sculptor ) {
     });
     roleButtonRow.add(setReferenceButton);
 
-    // TODO
-    var setContourButton = new UI.Button().setId('make-axis').onClick(function(){
+    var setContourButton = new UI.Button().setId('set-contour').onClick(function(){
         setSketchRole('contour');
     });
-    // roleButtonRow.add(setContourButton);
+    roleButtonRow.add(setContourButton);
     let roleButtons = {'axis':setAxisButton, 'reference': setReferenceButton, 'contour':setContourButton};
+
+    // TODO
+    var orderRow = new UI.Row().setDisplay('none');;
+    // roleButtonRow.add(orderRow);
+
+    var orders = new UI.Select([0,1,2,3,4]);
+    orderRow.add(
+        new UI.Text('Order'),
+        orders
+    );
 
     function setSketchRole (role) {
         if (sculptor.selected instanceof Sketch) {
             if (sculptor.selected.role == role) {
                 sculptor.setRole(sculptor.selected,'sketch');
+                roleButtons[role].dom.classList.remove('selected');
             } else {
                 sculptor.setRole(sculptor.selected,role);
+                updateRoleButtons(role);
             }
         }
-        updateRoleButtons(role);
     }
 
     function updateRoleButtons (role) {
@@ -170,7 +180,7 @@ var Toolbar = function ( sculptor ) {
             if (key == role) {
                 roleButtons[key].dom.classList.add('selected');
             } else {
-                roleButtons[key].dom.classList.remove('selected');      
+                roleButtons[key].dom.classList.remove('selected');
             }
         }
     }
@@ -216,6 +226,11 @@ var Toolbar = function ( sculptor ) {
         if (object instanceof Sketch) {
             roleButtonRow.setDisplay('inline');
             updateRoleButtons(object.role);
+            if (object.role == 'contour') {
+                orderRow.setDisplay('inline');
+            } else {
+                orderRow.setDisplay('none');
+            }
         } else {
             roleButtonRow.setDisplay('none')
         }

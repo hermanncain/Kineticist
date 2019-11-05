@@ -11,7 +11,7 @@ var Leftbar = function ( sculptor ) {
     var unitPanel = new Leftbar.Unit(sculptor);
     container.add(unitPanel);
 
-    var layoutPanel = new Leftbar.Layout(sculptor);
+    var layoutPanel = new Leftbar.Sculpture(sculptor);
     container.add(layoutPanel);
 
     signals.sceneChanged.add(function(name){
