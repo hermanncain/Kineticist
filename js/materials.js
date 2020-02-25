@@ -43,6 +43,7 @@ const junctionHelperMaterials = {
 // - Rod and fork envelopes
 const rodFrustumMaterial = new THREE.MeshStandardMaterial({color:/* 0xa88300 */0xff5500, roughness:1, metalness:0,side:THREE.DoubleSide,transparent:true,opacity:0.6});
 const forkFrustumMaterial = new THREE.MeshStandardMaterial({color:/* 0x1b6b36 */0x00eeaa, roughness:1, metalness:0,side:THREE.DoubleSide,transparent:true,opacity:0.6});
+const normalPlaneMaterial = new THREE.MeshStandardMaterial({color:0x0084ff, roughness:1, metalness:0,side:THREE.DoubleSide,transparent:true,opacity:0.4});
 
 // Mechanism materials
 // - Colored materials to distinguish each part

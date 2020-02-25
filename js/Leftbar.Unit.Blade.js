@@ -18,9 +18,9 @@ Leftbar.Unit.Blade = function (sculptor) {
     var scaleYController = new UI.SplineController(1,5,false,1,1).onDraw(updateSweepingParams);
     container.add(scaleYController);
 
-    // container.add(new UI.Text('◆ twisting').setClass('param-semantics'));
-    // var twistController = new UI.SplineController(1,360,true,0,0,120,40).onDraw(updateSweepingParams);
-    // container.add(twistController);
+    container.add(new UI.Text('◆ twisting').setClass('param-semantics'));
+    var twistController = new UI.SplineController(1,360,true,0,0,120,40).onDraw(updateSweepingParams);
+    container.add(twistController);
 
     function updateSweepingParams () {
         
@@ -30,24 +30,24 @@ Leftbar.Unit.Blade = function (sculptor) {
                 // update controls
                 rib.widthControls = scaleXController.getControls();
                 rib.thicknessControls = scaleYController.getControls();
-                // rib.twistControls = twistController.getControls();
+                rib.twistControls = twistController.getControls();
 
                 // update other values
                 rib.widths = scaleXController.getValues(rib.sweepSteps);
                 rib.thicknesses = scaleYController.getValues(rib.sweepSteps);
-                // rib.twists = twistController.getValues(rib.sweepSteps);
+                rib.twists = twistController.getValues(rib.sweepSteps);
             }
         } else {
             let rib = sculptor.selected;
             // update controls
             rib.widthControls = scaleXController.getControls();
             rib.thicknessControls = scaleYController.getControls();
-            // rib.twistControls = twistController.getControls();
+            rib.twistControls = twistController.getControls();
 
             // update other values
             rib.widths = scaleXController.getValues(rib.sweepSteps);
             rib.thicknesses = scaleYController.getValues(rib.sweepSteps);
-            // rib.twists = twistController.getValues(rib.sweepSteps);
+            rib.twists = twistController.getValues(rib.sweepSteps);
         }
     }
 
@@ -55,7 +55,7 @@ Leftbar.Unit.Blade = function (sculptor) {
         updateUIOnly = true;
         scaleXController.setControls(object.widthControls);
         scaleYController.setControls(object.thicknessControls);
-        // twistController.setControls(object.twistControls);
+        twistController.setControls(object.twistControls);
         updateUIOnly = false;
     }
 

@@ -61,6 +61,8 @@ function Unit (shape='propeller') {
     this.sleeveRing = null;
     this.rod = null;
     this.fork = null;
+    this.birod = null;
+    this.bifork =null;
 
     // shapes
     // 5. propellers
@@ -634,7 +636,40 @@ Unit.prototype = Object.assign(Object.create(THREE.Object3D.prototype), {
         }
     },
 
+    // TO BE SIMPLIFIED
+    buildBiRod: function (theta=Math.PI/3,height) {
+        this.clearBiRod();
+        let r = this.userData.sleeve.rOut;
+        height = height ? height : 2 * r;
+        this.birod = new Junction('Rod',theta,height,this.junctionPhase+Math.PI,r);
+        this.add(this.birod);
+        this.birod.updateMatrixWorld();
+    },
 
+    clearBiRod: function () {
+        if (this.birod) {
+            this.birod.dispose();
+            this.remove(this.birod);
+            this.birod = null;
+        }
+    },
+
+    buildBiFork: function (theta=Math.PI/3,height) {
+        this.clearBiFork();
+        let r = this.userData.sleeve.rOut;
+        height = height ? height : 2 * r;
+        this.bifork = new Junction('Fork',theta,height,this.junctionPhase+Math.PI,r);
+        this.add(this.bifork);
+        this.bifork.updateMatrixWorld();
+    },
+
+    clearBiFork: function () {
+        if (this.bifork) {
+            this.bifork.dispose();
+            this.remove(this.bifork);
+            this.bifork = null;
+        }
+    },
     // misc
 
     getMaxRadius: function () {

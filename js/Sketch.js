@@ -329,7 +329,24 @@ Sketch.prototype = Object.assign(Object.create(THREE.Object3D.prototype), {
         return {tangents: tangents, normals: normals, binormals: binormals};
     },
 
+    // 求曲线和一个平面的交点，并返回距该平面中心一定距离范围内的所有交点
+    getIntersections: function (planeCenter,plane,distance=Infinity) {
+        let resultPoints = [];
+        let tempPoint = new THREE.Vector3();
+        for (line of this.denseLines) {
+            let lineWorld = line.clone().applyMatrix4(this.curveMesh.matrix);
+            if (plane.intersectLine(lineWorld,tempPoint)==undefined) {
+                continue;
+            }
+            if (tempPoint.distanceTo(planeCenter)<distance) {
+                resultPoints.push(tempPoint.clone());
+            }
+        }
+        return resultPoints;
+    },
+
     // inaccurate
+    // 求和一个平面的交点，并返回距离平面中心最近的交点
     getNearestIntersection: function (planeCenter, plane) {
         // TODO: use local plane to save computing cost
         // let center = this.curveMesh.worldToLocal(planeCenter.clone());
@@ -349,19 +366,15 @@ Sketch.prototype = Object.assign(Object.create(THREE.Object3D.prototype), {
         return result;
     },
 
-    getIntersections: function (planeCenter,plane,distance=Infinity) {
-        let resultPoints = [];
-        let tempPoint = new THREE.Vector3();
-        for (line of this.denseLines) {
-            let lineWorld = line.clone().applyMatrix4(this.curveMesh.matrix);
-            if (plane.intersectLine(lineWorld,tempPoint)==undefined) {
-                continue;
-            }
-            if (tempPoint.distanceTo(planeCenter)<distance) {
-                resultPoints.push(tempPoint.clone());
-            }
+    // 求各法平面和一条曲线的最近交点
+    getNormalIntersectionsWithCurve: function (curve) {
+        let points = [];
+        let n = this.samplingPoints.length;
+        for (let i=0;i<n;i++) {
+            let pt = curve.getNearestIntersection(this.samplingPoints[i],this.samplingNormalPlanes[i]);
+            points.push(pt);
         }
-        return resultPoints;
+        return points;
     },
 
     getNormalIntersectionsWithCurves: function (sketches,distance=Infinity) {

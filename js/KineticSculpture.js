@@ -10,18 +10,25 @@ function KineticSculpture (axis=null, contours=[]) {
     // input
     this.axis = axis;
     this.reference = null;
-    // this.contours = [];
 
+    // cages
+    // 静态轮廓
     this.contours = contours;
+    this.samplingFreq = 20;
+    // 主轴法平面
+    this.planes = new THREE.Group();
+    this.add(this.planes);
+    // 骨架
+    this.skeletons = new THREE.Group();
+    this.add(this.skeletons);
+    // 动态轮廓
+    this.outlines = new THREE.Group();
+    this.add(this.outlines);
 
     // units
     this.unit = null;
     this.units = new THREE.Group();
     this.add(this.units);
-
-    // Outlines built from unit skeleton ends
-    this.outlines = new THREE.Group();
-    this.add(this.outlines);
 
     // Axis mechanism
     this.axisWidth = 0.11;
@@ -159,38 +166,38 @@ KineticSculpture.prototype = Object.assign(Object.create(THREE.Object3D.prototyp
 
     // Outline
     // draw spline outlines passing through unit ends
-    computeOutlines: function () {
-        let n = this.units.children.length;
-        for (let u of this.units.children) {
+    // computeOutlines: function () {
+    //     let n = this.units.children.length;
+    //     for (let u of this.units.children) {
             
-        }
+    //     }
 
-    },
+    // },
 
-    buildOutlines: function () {
-        this.clearOutlines();
+    // buildOutlines: function () {
+    //     this.clearOutlines();
 
-        let n = this.units.children[0].skeleton.children.length;
-        for (let i=0;i<n;i++) {
-            let pts = [];
-            for (let j=0;j<this.units.children.length;j++) {
-                let end = this.units.children[j].skeleton.children[i].end;
-                pts.push(end.localToWorld(new THREE.Vector3()));
-            }
-            let curve = new Sketch('spline',pts,undefined,'sketch',this.axis.closed);
-            curve.pointMeshes.map(function(p){
-                p.material.size = 0.3;
-            });
-            this.outlines.add(curve);
-        }
-    },
+    //     let n = this.units.children[0].skeleton.children.length;
+    //     for (let i=0;i<n;i++) {
+    //         let pts = [];
+    //         for (let j=0;j<this.units.children.length;j++) {
+    //             let end = this.units.children[j].skeleton.children[i].end;
+    //             pts.push(end.localToWorld(new THREE.Vector3()));
+    //         }
+    //         let curve = new Sketch('spline',pts,undefined,'sketch',this.axis.closed);
+    //         curve.pointMeshes.map(function(p){
+    //             p.material.size = 0.3;
+    //         });
+    //         this.outlines.add(curve);
+    //     }
+    // },
 
-    clearOutlines: function () {
-        for (let contour of this.outlines.children) {
-            contour.dispose();
-        }
-        this.outlines.children = [];
-    },
+    // clearOutlines: function () {
+    //     for (let contour of this.outlines.children) {
+    //         contour.dispose();
+    //     }
+    //     this.outlines.children = [];
+    // },
 
 
     // Sketch-based generation
@@ -216,41 +223,105 @@ KineticSculpture.prototype = Object.assign(Object.create(THREE.Object3D.prototyp
         }
     },
 
-    buildSkeleton: function (dist=Infinity,freq=20) {
-
-        this.clearSkeleton();
-        this.clear();
-
-        // initialize an empty unit
-        this.unit = new Unit();
-        let params = {n:freq,scale:1,torsion:0};
-        
-        // sample axis and arrange empty units
-        this.setSleeveRadii();
-        this.axis.sample(params.n);
-        this.layout(this.unit,params,true);
-
-        // get all intersections of all contours with axis normal planes
-        let samplingEnds = this.axis.getNormalIntersectionsWithCurves(this.contours,dist);
-        for (i=0;i<freq;i++) {
-            let ends = samplingEnds[i];
-            let unit = this.units.children[i];
-            // empty
-            if (ends.length == 0) {
-                unit.isEmpty = true;
-                continue;
-            }
-            for (end of ends) {
-                let point = end.clone();
-                unit.worldToLocal(point);
-                unit.addRib(point);
-            }
-            unit.buildSleeveRing();
-            unit.updatePointSize(0.2);
+    // Dynamic cage module
+    // 生成骨架
+    generateSkeletons: function () {
+        for (let p of this.skeletons.children) {
+            p.geometry.dispose();
         }
-
+        this.skeletons.children = [];
+        let positions = this.axis.samplingPoints;
+        let frames = this.axis.ff;
+        for (let i=0;i<positions.length;i++) {
+            // align to frame
+            let m = new THREE.Matrix4().makeBasis(frames.normals[i],frames.binormals[i],frames.tangents[i]).setPosition(positions[i]);
+            let u = new Unit();
+            u.applyMatrix(m);
+            u.metaRotation = u.rotation.clone();
+            this.skeletons.add(u);
+            // important
+            u.updateMatrixWorld();
+        }
     },
 
+    // 生成法平面
+    generateNormalPlanes: function () {
+        for (let p of this.planes.children) {
+            p.geometry.dispose();
+        }
+        this.planes.children = [];
+        let positions = this.axis.samplingPoints;
+        let frames = this.axis.ff;
+        for (let i=0;i<positions.length;i++) {
+            // align to frame
+            let m = new THREE.Matrix4().makeBasis(frames.normals[i],frames.binormals[i],frames.tangents[i]).setPosition(positions[i]);
+            let plane = nplane.clone();
+            plane.applyMatrix(m);
+            this.planes.add(plane);
+            plane.scale.set(5,5,5);
+            // important
+            plane.updateMatrixWorld();
+        }
+    },
+
+    // 初始化动态笼体
+    initDynamicCage: function (freq=20) {
+        // 主轴曲线采样
+        this.samplingFreq = freq;
+        this.axis.sample(freq);
+        // 构造法平面
+        this.generateNormalPlanes();
+        // this.clearOutlines();
+        // 求法平面和静态轮廓交点
+        let pij = [];
+        for (let contour of this.contours) {
+            let pj = this.axis.getNormalIntersectionsWithCurve(contour);
+            pij.push(pj);
+        }
+        console.log(pij);
+        // 初始化骨架
+        this.generateSkeletons();
+        for (let i=0;i<freq;i++) {
+            let u = this.skeletons.children[i];
+            for (let j=0;j<pij.length;j++) {
+                if(pij[j][i]!==null) {
+                    u.addRib(u.worldToLocal(pij[j][i].clone()));
+                    let rib = u.skeleton.children[u.skeleton.children.length-1];
+                    rib.p1.visible=false;
+                    rib.p2.visible=false;
+                } else {
+                    u.skeleton.add(new THREE.Group());
+                }
+            }
+        }
+        // 构造动态轮廓
+        this.buildDynamicContours();
+    },
+
+    clearDynamicContours: function () {
+        for (let dc of this.outlines.children) {
+            dc.dispose();
+        }
+        this.outlines.children = [];
+    },
+
+    buildDynamicContours: function () {
+        this.clearDynamicContours();
+        for (let j=0;j<this.contours.length;j++) {
+            let pts = [];
+            for (let i=0;i<this.samplingFreq;i++) {
+                let u = this.skeletons.children[i];
+                let rib = u.skeleton.children[j];
+                if (rib instanceof Rib) {
+                    let pt = u.localToWorld(rib.end.position.clone());
+                    pts.push(pt);
+                }
+            }
+            let outline = new Sketch('spline',pts);
+            outline.pointMeshes.map(function(p){p.visible=false});
+            this.outlines.add(outline);
+        }
+    },
 
     // motion control
 
@@ -345,13 +416,18 @@ KineticSculpture.prototype = Object.assign(Object.create(THREE.Object3D.prototyp
 
     simulateMotion: function () {
         // rotate units
-        for(unit of this.units.children) {
+        for(let unit of this.units.children) {
             unit.rotateZ(unit.userData.velocity);
         }
-        // update outlines
-        if(this.outlines.children.length>0) {
-            this.buildOutlines();
+        // rotate skeletons
+        for (let sk of this.skeletons.children) {
+            sk.rotateZ(sk.userData.velocity);
         }
+        // update dynamic contours
+        if(this.skeletons.children.length>0) {
+            this.buildDynamicContours();
+        }
+        
     },
 
     reset: function () {
@@ -361,9 +437,15 @@ KineticSculpture.prototype = Object.assign(Object.create(THREE.Object3D.prototyp
             // must
             unit.updateMatrixWorld();
         }
+        // reset skeletons
+        for(sk of this.skeletons.children) {
+            sk.rotation.copy(sk.metaRotation);
+            // must
+            sk.updateMatrixWorld();
+        }
         // reset outlines
-        if(this.outlines.children.length>0) {
-            this.buildOutlines();
+        if(this.skeletons.children.length>0) {
+            this.buildDynamicContours();
         }
     },
 
@@ -375,7 +457,8 @@ KineticSculpture.prototype = Object.assign(Object.create(THREE.Object3D.prototyp
     // 2. Even a junction's envelope collides with a unit or unit skeleton, junction's
     //    mechanism may not collide with them. It depends on junction's phase
 
-    buildJoints: function (highlight=false) {
+    // single, double, cross
+    buildJoints: function (layout='single', highlight=false) {
         // compute phases
         for (let u of this.units.children) {
             u.computeBestPhase();
@@ -411,10 +494,18 @@ KineticSculpture.prototype = Object.assign(Object.create(THREE.Object3D.prototyp
                         u1.rod.buildMechanism();
                         u2.fork.buildMechanism();
                         // make rod and fork on the same unit has a phase difference of PI
-                        // if (i % 2 == 1) {
-                        //     u1.rod.rotateZ(Math.PI);
-                        //     u2.fork.rotateZ(Math.PI);
-                        // }
+                        if (layout == 'cross') {
+                            if (i % 2 == 1) {
+                                u1.rod.rotateZ(Math.PI);
+                                u2.fork.rotateZ(Math.PI);
+                            }
+                        } else if (layout == 'double') {
+                            u1.buildBiRod(theta,h);
+                            u2.buildBiFork(theta,h);
+                            u1.birod.buildMechanism();
+                            u2.bifork.buildMechanism();
+                        }
+                        
                         if (this.params) {
                             u2.fork.rotateZ(-this.params.torsion/180*Math.PI);
                         }

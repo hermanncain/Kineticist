@@ -224,7 +224,7 @@ var Menubar = function ( sculptor ) {
 			rotate.setDisplay('none');
 			scale.setDisplay('none');
 			remove.setDisplay('none');
-		} else if (object instanceof Rib || object instanceof Sketch) {
+		} else if (object instanceof Rib) {
 			translate.setDisplay('none');
 			rotate.setDisplay('');
 			scale.setDisplay('');

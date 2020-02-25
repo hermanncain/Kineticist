@@ -89,7 +89,7 @@ Leftbar.Sculpture.Mechanisms = function (sculptor) {
             alert('please layout first!');
             return;
         }
-        if (sculptor.sculpture.buildJoints(true)) {
+        if (sculptor.sculpture.buildJoints('single',true)) {
             signals.infoChanged.dispatch('Got a feasible solution.');
             // TODO: determine junction phases
             // sculptor.sculpture.buildAxis();
