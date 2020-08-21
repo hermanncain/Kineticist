@@ -362,6 +362,11 @@ Unit.prototype = Object.assign(Object.create(THREE.Object3D.prototype), {
 
     generateShape: function () {
         this.clearShapes();
+        if (this.skeleton.children.length==0) {
+            this.isEmpty = true;
+            return;
+        }
+        this.isEmpty = false;
         if (this.shape=='propeller') {
             this.buildSleeve();
             this.buildBlades();
@@ -471,6 +476,9 @@ Unit.prototype = Object.assign(Object.create(THREE.Object3D.prototype), {
 
         // sweeping
         for (let rib of this.skeleton.children) {
+            if (rib instanceof Rib == false) {
+                continue;
+            }
             if (!rib.curve) {
                 rib.initialize();
             }
@@ -527,6 +535,9 @@ Unit.prototype = Object.assign(Object.create(THREE.Object3D.prototype), {
         
         // build
         for (let rib of this.skeleton.children) {
+            if (rib instanceof Rib == false) {
+                continue;
+            }
             for (let marker of rib.markerContainer.children) {
                 let t = marker.pos;
                 let s = marker.sca;
@@ -573,9 +584,15 @@ Unit.prototype = Object.assign(Object.create(THREE.Object3D.prototype), {
     },
 
     computeBestPhase: function () {
+        if (this.isEmpty) {
+            return;
+        }
         // sort blades' install angles
         let ribAngles = [];
         for (let rib of this.skeleton.children) {
+            if (rib instanceof Rib == false) {
+                continue;
+            }
             let a = rib.getInstallAngle(this.userData.sleeve.rInner);
             a = a<0?a+Math.PI*2:a;
             ribAngles.push(a);
@@ -593,6 +610,9 @@ Unit.prototype = Object.assign(Object.create(THREE.Object3D.prototype), {
                 maxAngle = diff;
                 idx = i;
             }
+        }
+        if (ribAngles.length==0) {
+            ribAngles = [0];
         }
         let circleAngle = Math.PI*2-ribAngles[ribAngles.length-1]+ribAngles[0];
         if ( circleAngle > maxAngle) {

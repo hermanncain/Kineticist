@@ -198,17 +198,6 @@ KineticSculpture.prototype = Object.assign(Object.create(THREE.Object3D.prototyp
     //     }
     //     this.outlines.children = [];
     // },
-
-
-    // Sketch-based generation
-
-    clearSkeleton: function () {
-        for (let unit of this.units.children) {
-            unit.dispose();
-        }
-        this.units.children = [];
-    },
-
     setSleeveRadii: function () {
         this.axis.curveMesh.geometry.computeBoundingSphere();
         let axisRadius = this.axis.curveMesh.geometry.boundingSphere.radius * this.axis.curveMesh.scale.z;
@@ -223,13 +212,27 @@ KineticSculpture.prototype = Object.assign(Object.create(THREE.Object3D.prototyp
         }
     },
 
+    // Sketch-based generation
+
+    clearSkeleton: function () {
+        for (let unit of this.units.children) {
+            unit.dispose();
+        }
+        this.units.children = [];
+    },
+
     // Dynamic cage module
     // 生成骨架
-    generateSkeletons: function () {
-        for (let p of this.skeletons.children) {
-            p.geometry.dispose();
+    generateSkeletons: function (skeleton=true) {
+        if (skeleton) {
+            for (let p of this.skeletons.children) {
+                p.geometry.dispose();
+            }
+            this.skeletons.children = [];
+        } else {
+            this.units.children = [];
         }
-        this.skeletons.children = [];
+        
         let positions = this.axis.samplingPoints;
         let frames = this.axis.ff;
         for (let i=0;i<positions.length;i++) {
@@ -238,7 +241,12 @@ KineticSculpture.prototype = Object.assign(Object.create(THREE.Object3D.prototyp
             let u = new Unit();
             u.applyMatrix(m);
             u.metaRotation = u.rotation.clone();
-            this.skeletons.add(u);
+            if (skeleton) {
+                this.skeletons.add(u);
+            } else {
+                this.units.add(u);
+            }
+            
             // important
             u.updateMatrixWorld();
         }
@@ -321,6 +329,42 @@ KineticSculpture.prototype = Object.assign(Object.create(THREE.Object3D.prototyp
             outline.pointMeshes.map(function(p){p.visible=false});
             this.outlines.add(outline);
         }
+    },
+
+    buildUnitSkeletons: function (freq=20) {
+        // 主轴曲线采样
+        this.samplingFreq = freq;
+        this.axis.sample(freq);
+        // 构造法平面
+        this.generateNormalPlanes();
+        // this.clearOutlines();
+        // 求法平面和静态轮廓交点
+        let pij = [];
+        for (let contour of this.contours) {
+            let pj = this.axis.getNormalIntersectionsWithCurve(contour);
+            pij.push(pj);
+        }
+        // 初始化骨架
+        this.generateSkeletons(false);
+        for (let i=0;i<freq;i++) {
+            let u = this.units.children[i];
+            for (let j=0;j<pij.length;j++) {
+                if(pij[j][i]!==null) {
+                    u.addRib(u.worldToLocal(pij[j][i].clone()));
+                    let rib = u.skeleton.children[u.skeleton.children.length-1];
+                    rib.p1.visible=false;
+                    rib.p2.visible=false;
+                    rib.addMarker(1,1,'plate');
+                }
+            }
+        }
+    },
+
+    buildUnits: function (freq=20) {
+        this.buildUnitSkeletons(freq);
+        this.units.children.map(function(u){
+            u.generateShape();
+        });
     },
 
     // motion control
