@@ -1,4 +1,4 @@
-本文档只讲述自底向上设计刘成霞系统的使用方法，具体原理见README中的论文
+本文档只讲述自底向上设计流程的使用方法，具体原理见README中的CGA论文
 
 ## 1 单元设计 <img src="css/icons/menubar/unit-scene.svg" width = "20" height = "20"/> 
 
@@ -58,7 +58,7 @@
 
 点击`refine models`按钮对零件进行细化
 
-点击`export stl`按钮下载所有单元轴套的stl模型。
+点击`export stl`按钮下载所有单元轴套的stl模型（目前只开放了轴套的下载，叶片和传动机构的安装孔都会自动挖好）
 
 ## 6 显示控制
 
